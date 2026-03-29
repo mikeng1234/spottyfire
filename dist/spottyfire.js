@@ -124,6 +124,66 @@ const ThemeManager = (function () {
     diverging: ['#f43f5e','#fb7185','#fecdd3','#27272a','#67e8f9','#22d3ee','#06b6d4'],
   });
 
+  // ── Theme 7: Obsidian (Premium Dark — deep blacks, jewel-tone accents) ──
+  THEMES.obsidian = Object.assign({}, DEFAULTS, {
+    name: 'obsidian',
+    background: '#08080c',
+    panelBg: '#101018',
+    panelBorder: '#1e1e2e',
+    panelShadow: '0 8px 32px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.03) inset',
+    textPrimary: '#e8e8f0',
+    textSecondary: '#8888a0',
+    textMuted: '#555568',
+    gridLines: 'rgba(255,255,255,0.04)',
+    accent: '#7c6aef',
+    marking: '#ff6b8a',
+    unmarkedOpacity: 0.07,
+    palette: [
+      '#7c6aef',  // Soft violet
+      '#4fd1c5',  // Teal jade
+      '#f6ad55',  // Warm gold
+      '#fc8181',  // Coral pink
+      '#68d391',  // Mint green
+      '#63b3ed',  // Sky blue
+      '#f687b3',  // Rose
+      '#b794f4',  // Lavender
+      '#4fd1c5',  // Aquamarine
+      '#fbd38d',  // Peach
+    ],
+    sequential: ['#08080c','#161630','#2d2a6e','#4c3ecc','#7c6aef','#a89cf5','#d4ccfa'],
+    diverging: ['#ff6b8a','#ffa0b4','#ffd0da','#1a1a2e','#a0e0d8','#4fd1c5','#2c9f94'],
+  });
+
+  // ── Theme 8: Porcelain (Premium Light — warm whites, refined pastels) ──
+  THEMES.porcelain = Object.assign({}, DEFAULTS, {
+    name: 'porcelain',
+    background: '#faf9f7',
+    panelBg: '#ffffff',
+    panelBorder: '#e8e4df',
+    panelShadow: '0 2px 12px rgba(120,100,80,0.07), 0 1px 0 rgba(120,100,80,0.04)',
+    textPrimary: '#2c2520',
+    textSecondary: '#7a7068',
+    textMuted: '#b0a89e',
+    gridLines: 'rgba(44,37,32,0.06)',
+    accent: '#6366f1',
+    marking: '#e11d48',
+    unmarkedOpacity: 0.06,
+    palette: [
+      '#6366f1',  // Indigo
+      '#0d9488',  // Deep teal
+      '#c026d3',  // Fuchsia
+      '#d97706',  // Amber
+      '#e11d48',  // Crimson
+      '#2563eb',  // Royal blue
+      '#059669',  // Emerald
+      '#9333ea',  // Purple
+      '#ea580c',  // Burnt orange
+      '#0891b2',  // Cyan
+    ],
+    sequential: ['#faf9f7','#e8e4df','#c8bfb4','#9a8e82','#6366f1','#4f46e5','#3730a3'],
+    diverging: ['#e11d48','#fb7185','#fecdd3','#faf9f7','#c7d2fe','#818cf8','#4f46e5'],
+  });
+
   let _current = THEMES.midnight;
   const _listeners = [];
 

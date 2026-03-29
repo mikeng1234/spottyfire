@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpottyFire — Premium Themes</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="../dist/spottyfire.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+    /* Top bar */
+    .showcase-bar {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 32px;
+      background: rgba(16,16,24,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .showcase-bar h1 {
+      font-size: 18px; font-weight: 700; margin: 0;
+      color: #e8e8f0; letter-spacing: -0.3px;
+    }
+    .showcase-bar h1 span { color: #7c6aef; }
+    .showcase-bar .pills { display: flex; gap: 6px; }
+    .pill {
+      padding: 6px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
+      background: transparent; color: #8888a0; font-size: 12px; font-weight: 500;
+      cursor: pointer; transition: all 200ms ease; font-family: inherit;
+    }
+    .pill:hover { border-color: #7c6aef; color: #e8e8f0; }
+    .pill.active { background: #7c6aef; border-color: #7c6aef; color: #fff; }
+
+    /* Split layout */
+    .split { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+    .theme-half { padding: 24px; transition: background 400ms ease; }
+    .theme-half.dark { background: #08080c; }
+    .theme-half.light { background: #faf9f7; }
+
+    .theme-label {
+      font-size: 28px; font-weight: 800; margin: 0 0 4px;
+      letter-spacing: -0.5px;
+    }
+    .dark .theme-label { color: #e8e8f0; }
+    .light .theme-label { color: #2c2520; }
+
+    .theme-sub {
+      font-size: 13px; margin: 0 0 20px;
+    }
+    .dark .theme-sub { color: #555568; }
+    .light .theme-sub { color: #b0a89e; }
+
+    .chart-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .chart-box { min-height: 320px; }
+    .chart-wide { grid-column: 1 / -1; min-height: 300px; }
+    .table-box { grid-column: 1 / -1; height: 260px; }
+
+    /* Full-width mode */
+    .split.full { grid-template-columns: 1fr; }
+    .split.full .hidden-half { display: none; }
+
+    /* Palette strip */
+    .palette-strip {
+      display: flex; gap: 4px; margin-bottom: 16px;
+    }
+    .swatch {
+      flex: 1; height: 6px; border-radius: 3px;
+      transition: transform 200ms ease;
+    }
+    .swatch:hover { transform: scaleY(3); }
+
+    /* Divider */
+    .divider-line {
+      position: fixed; left: 50%; top: 0; bottom: 0;
+      width: 1px; background: rgba(128,128,128,0.15); z-index: 50;
+      pointer-events: none;
+    }
+    .split.full .divider-line { display: none; }
+
+    @media (max-width: 1200px) {
+      .split { grid-template-columns: 1fr; }
+      .divider-line { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sticky header -->
+  <div class="showcase-bar">
+    <h1><span>SpottyFire</span> Premium Themes</h1>
+    <div class="pills">
+      <button class="pill active" onclick="showBoth()">Split View</button>
+      <button class="pill" onclick="showOnly('dark')">Obsidian Only</button>
+      <button class="pill" onclick="showOnly('light')">Porcelain Only</button>
+    </div>
+  </div>
+
+  <div class="split" id="split">
+    <div class="divider-line"></div>
+
+    <!-- LEFT: Obsidian (Dark) -->
+    <div class="theme-half dark" id="half-dark">
+      <div class="theme-label">Obsidian</div>
+      <div class="theme-sub">Premium Dark &mdash; Deep blacks, jewel-tone accents, cinematic depth</div>
+      <div class="palette-strip" id="pal-dark"></div>
+      <div class="chart-grid">
+        <div id="d-bar" class="chart-box"></div>
+        <div id="d-scatter" class="chart-box"></div>
+        <div id="d-pie" class="chart-box"></div>
+        <div id="d-line" class="chart-box"></div>
+        <div id="d-heat" class="chart-wide"></div>
+        <div id="d-table" class="table-box"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Porcelain (Light) -->
+    <div class="theme-half light" id="half-light">
+      <div class="theme-label">Porcelain</div>
+      <div class="theme-sub">Premium Light &mdash; Warm whites, refined pastels, editorial elegance</div>
+      <div class="palette-strip" id="pal-light"></div>
+      <div class="chart-grid">
+        <div id="l-bar" class="chart-box"></div>
+        <div id="l-scatter" class="chart-box"></div>
+        <div id="l-pie" class="chart-box"></div>
+        <div id="l-line" class="chart-box"></div>
+        <div id="l-heat" class="chart-wide"></div>
+        <div id="l-table" class="table-box"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── View toggle ──
+    function showBoth() {
+      document.getElementById('split').className = 'split';
+      document.getElementById('half-dark').classList.remove('hidden-half');
+      document.getElementById('half-light').classList.remove('hidden-half');
+      updatePills(0);
+    }
+    function showOnly(which) {
+      document.getElementById('split').className = 'split full';
+      if (which === 'dark') {
+        document.getElementById('half-dark').classList.remove('hidden-half');
+        document.getElementById('half-light').classList.add('hidden-half');
+        updatePills(1);
+      } else {
+        document.getElementById('half-light').classList.remove('hidden-half');
+        document.getElementById('half-dark').classList.add('hidden-half');
+        updatePills(2);
+      }
+      setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 100);
+    }
+    function updatePills(idx) {
+      document.querySelectorAll('.pill').forEach(function(p, i) {
+        p.classList.toggle('active', i === idx);
+      });
+    }
+
+    // ── Render palette swatches ──
+    function renderPalette(containerId, palette) {
+      var el = document.getElementById(containerId);
+      palette.forEach(function(c) {
+        var s = document.createElement('div');
+        s.className = 'swatch';
+        s.style.background = c;
+        s.title = c;
+        el.appendChild(s);
+      });
+    }
+
+    // ── Render all charts for a theme ──
+    function renderSuite(prefix, themeName) {
+      SpottyFire.setTheme(themeName);
+      var ds = new SpottyFire.DataStore();
+      ds.loadCSV('../data/sample-employees.csv').then(function() {
+        ds.addCalculatedColumn('TotalComp', '[Salary] + [Bonus]');
+
+        SpottyFire.BarChart('#' + prefix + '-bar', ds, {
+          category: 'Department', value: 'Salary', aggregation: 'avg',
+          showValues: true, title: 'Avg Salary by Department'
+        });
+
+        SpottyFire.ScatterPlot('#' + prefix + '-scatter', ds, {
+          x: 'Age', y: 'Salary', colorBy: 'Department',
+          pointSize: 6, title: 'Age vs Salary'
+        });
+
+        SpottyFire.PieChart('#' + prefix + '-pie', ds, {
+          category: 'Region', value: 'Salary', aggregation: 'sum',
+          title: 'Salary by Region', hole: 0.5, showPercent: true
+        });
+
+        SpottyFire.LineChart('#' + prefix + '-line', ds, {
+          x: 'HireDate', y: ['Salary'], groupBy: 'Department',
+          title: 'Salary Trends', smooth: true
+        });
+
+        SpottyFire.HeatMap('#' + prefix + '-heat', ds, {
+          x: 'Department', y: 'Region', value: 'PerformanceScore',
+          aggregation: 'avg', showValues: true, title: 'Performance Heatmap'
+        });
+
+        SpottyFire.DataTable('#' + prefix + '-table', ds, {
+          columns: ['Name', 'Department', 'Region', 'Salary', 'TotalComp', 'PerformanceScore'],
+          pageSize: 8, title: 'Employee Details'
+        });
+      });
+    }
+
+    // ── Boot ──
+    // Render Obsidian side
+    SpottyFire.setTheme('obsidian');
+    renderPalette('pal-dark', SpottyFire.getTheme().palette);
+    renderSuite('d', 'obsidian');
+
+    // Render Porcelain side
+    SpottyFire.setTheme('porcelain');
+    renderPalette('pal-light', SpottyFire.getTheme().palette);
+    renderSuite('l', 'porcelain');
+  </script>
+</body>
+</html>
