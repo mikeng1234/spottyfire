@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpottyFire — Theme Gallery</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="../dist/spottyfire.js"></script>
+  <style>
+    body { background: #111; }
+    .gallery {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .gallery-header {
+      grid-column: 1 / -1;
+      text-align: center;
+      color: #e4e4e7;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .gallery-header h1 { font-size: 28px; margin: 0 0 8px 0; }
+    .gallery-header p { color: #71717a; font-size: 14px; margin: 0 0 16px 0; }
+    .theme-card {
+      border-radius: 16px;
+      overflow: hidden;
+      position: relative;
+    }
+    .theme-label {
+      position: absolute;
+      top: 12px;
+      left: 16px;
+      z-index: 10;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+    .theme-chart { height: 350px; }
+  </style>
+</head>
+<body>
+  <div class="gallery">
+    <div class="gallery-header">
+      <h1>SpottyFire Theme Gallery</h1>
+      <p>The same bar chart rendered with each of the 6 built-in themes</p>
+    </div>
+  </div>
+
+  <script>
+    const themes = ['midnight', 'arctic', 'forest', 'sunset', 'corporate', 'neon'];
+    const gallery = document.querySelector('.gallery');
+
+    // Sample data inline for independence
+    const sampleData = [
+      { Department: 'Engineering', Salary: 62000 },
+      { Department: 'Engineering', Salary: 58000 },
+      { Department: 'Engineering', Salary: 71000 },
+      { Department: 'Sales', Salary: 45000 },
+      { Department: 'Sales', Salary: 52000 },
+      { Department: 'Sales', Salary: 48000 },
+      { Department: 'HR', Salary: 42000 },
+      { Department: 'HR', Salary: 39000 },
+      { Department: 'HR', Salary: 44000 },
+      { Department: 'Finance', Salary: 55000 },
+      { Department: 'Finance', Salary: 61000 },
+      { Department: 'Finance', Salary: 58000 },
+      { Department: 'Operations', Salary: 38000 },
+      { Department: 'Operations', Salary: 41000 },
+      { Department: 'Operations', Salary: 35000 },
+    ];
+
+    themes.forEach(themeName => {
+      const card = document.createElement('div');
+      card.className = 'theme-card';
+
+      const label = document.createElement('div');
+      label.className = 'theme-label';
+      label.textContent = themeName.charAt(0).toUpperCase() + themeName.slice(1);
+      card.appendChild(label);
+
+      const chartDiv = document.createElement('div');
+      chartDiv.className = 'theme-chart';
+      chartDiv.id = 'theme-' + themeName;
+      card.appendChild(chartDiv);
+
+      gallery.appendChild(card);
+    });
+
+    // Render each theme
+    themes.forEach(themeName => {
+      SpottyFire.setTheme(themeName);
+      const ds = new SpottyFire.DataStore();
+      ds.loadJSON(sampleData);
+
+      SpottyFire.BarChart('#theme-' + themeName, ds, {
+        category: 'Department',
+        value: 'Salary',
+        aggregation: 'avg',
+        showValues: true,
+        title: 'Avg Salary by Department'
+      });
+    });
+
+    // Reset to midnight
+    SpottyFire.setTheme('midnight');
+  </script>
+</body>
+</html>

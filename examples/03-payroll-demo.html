@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GenXcript Payroll Analytics — Powered by SpottyFire</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="../dist/spottyfire.js"></script>
+  <style>
+    .payroll-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto auto auto;
+      gap: 16px;
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .payroll-header { grid-column: 1 / -1; }
+    .payroll-toolbar { grid-column: 1 / -1; }
+    .chart-box { min-height: 380px; }
+    .wide { grid-column: 1 / -1; }
+    h1 { font-size: 24px; font-weight: 700; margin: 0 0 4px 0; }
+    .subtitle { color: var(--sl-text-secondary); font-size: 14px; margin: 0 0 8px 0; }
+    .badge { display: inline-block; background: var(--sl-accent); color: #fff; font-size: 10px; padding: 2px 8px; border-radius: 4px; margin-left: 8px; vertical-align: middle; }
+  </style>
+</head>
+<body>
+  <div class="payroll-grid">
+    <div class="payroll-header">
+      <h1>GenXcript <span style="font-weight:400;color:var(--sl-text-secondary);">Payroll Analytics</span>
+        <span class="badge">SpottyFire</span>
+      </h1>
+      <p class="subtitle">Click any chart element to cross-filter. Shift+click to add. Escape to clear.</p>
+    </div>
+
+    <div id="toolbar" class="payroll-toolbar"></div>
+
+    <div id="dept-salary" class="chart-box"></div>
+    <div id="scatter" class="chart-box"></div>
+    <div id="region-pie" class="chart-box"></div>
+    <div id="heatmap" class="chart-box"></div>
+    <div id="table" class="wide" style="height:340px;"></div>
+  </div>
+
+  <script>
+    const ds = new SpottyFire.DataStore();
+    ds.loadCSV('../data/sample-employees.csv').then(() => {
+      // Computed columns
+      ds.addCalculatedColumn('AnnualSalary', '[Salary] * 12');
+      ds.addCalculatedColumn('TotalComp', '[Salary] + [Bonus]');
+
+      SpottyFire.Toolbar('#toolbar', ds, {
+        showExport: true,
+        showThemeToggle: true,
+        themes: ['midnight', 'arctic', 'corporate', 'sunset']
+      });
+
+      SpottyFire.BarChart('#dept-salary', ds, {
+        category: 'Department',
+        value: 'TotalComp',
+        aggregation: 'avg',
+        showValues: true,
+        title: 'Avg Total Compensation by Department'
+      });
+
+      SpottyFire.ScatterPlot('#scatter', ds, {
+        x: 'Age',
+        y: 'Salary',
+        colorBy: 'Department',
+        title: 'Employee Salary Distribution'
+      });
+
+      SpottyFire.PieChart('#region-pie', ds, {
+        category: 'Region',
+        value: 'Salary',
+        aggregation: 'count',
+        title: 'Headcount by Region',
+        showPercent: true,
+      });
+
+      SpottyFire.HeatMap('#heatmap', ds, {
+        x: 'Department',
+        y: 'Region',
+        value: 'PerformanceScore',
+        aggregation: 'avg',
+        showValues: true,
+        title: 'Performance Score Heatmap'
+      });
+
+      SpottyFire.DataTable('#table', ds, {
+        columns: ['Name', 'Department', 'Region', 'Salary', 'Bonus', 'TotalComp', 'AnnualSalary', 'Age', 'PerformanceScore'],
+        showOnlyMarked: true,
+        title: 'Selected Employee Details'
+      });
+    });
+  </script>
+</body>
+</html>

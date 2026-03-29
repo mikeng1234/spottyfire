@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpottyFire — Quick Start</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="../dist/spottyfire.js"></script>
+</head>
+<body>
+  <div style="max-width:1200px;margin:0 auto;padding:24px;">
+    <h1 style="font-size:22px;font-weight:700;margin-bottom:4px;">SpottyFire Quick Start</h1>
+    <p style="color:var(--sl-text-secondary);font-size:14px;margin-bottom:24px;">
+      Click a bar to highlight matching points in the scatter plot. Press Escape to clear.
+    </p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div id="bar" style="height:420px;"></div>
+      <div id="scatter" style="height:420px;"></div>
+    </div>
+    <div id="table" style="height:320px;margin-top:16px;"></div>
+  </div>
+
+  <script>
+    const ds = new SpottyFire.DataStore();
+    ds.loadCSV('../data/sample-employees.csv').then(() => {
+      SpottyFire.BarChart('#bar', ds, {
+        category: 'Department',
+        value: 'Salary',
+        aggregation: 'avg',
+        title: 'Average Salary by Department'
+      });
+
+      SpottyFire.ScatterPlot('#scatter', ds, {
+        x: 'Age',
+        y: 'Salary',
+        colorBy: 'Department',
+        title: 'Age vs Salary'
+      });
+
+      SpottyFire.DataTable('#table', ds, {
+        columns: ['Name', 'Department', 'Salary', 'Age', 'Region'],
+        showOnlyMarked: true,
+        title: 'Selected Employees'
+      });
+    });
+  </script>
+</body>
+</html>

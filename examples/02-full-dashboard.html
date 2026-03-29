@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpottyFire — Full Dashboard</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="../dist/spottyfire.js"></script>
+  <style>
+    .dash-grid {
+      display: grid;
+      grid-template-columns: 220px 1fr 1fr;
+      grid-template-rows: auto auto 1fr;
+      gap: 16px;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+      height: calc(100vh - 48px);
+    }
+    .dash-header { grid-column: 1 / -1; }
+    .dash-toolbar { grid-column: 1 / -1; }
+    .dash-filters { grid-row: 3 / 6; }
+    .chart-box { min-height: 340px; }
+    .table-box { min-height: 280px; grid-column: 2 / -1; }
+    h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px 0; }
+    .subtitle { color: var(--sl-text-secondary); font-size: 14px; margin: 0; }
+  </style>
+</head>
+<body>
+  <div class="dash-grid">
+    <div class="dash-header">
+      <h1>SpottyFire Dashboard</h1>
+      <p class="subtitle">All 6 chart types with cross-chart marking, filters, and formulas</p>
+    </div>
+
+    <div class="dash-toolbar" style="grid-column: 1 / -1; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+      <div id="toolbar"></div>
+      <div id="formula" style="flex:1;"></div>
+    </div>
+
+    <div id="filters" class="dash-filters" style="overflow-y:auto;"></div>
+
+    <div id="bar" class="chart-box"></div>
+    <div id="scatter" class="chart-box"></div>
+    <div id="line" class="chart-box"></div>
+    <div id="pie" class="chart-box"></div>
+    <div id="heatmap" class="chart-box" style="grid-column: 2 / -1;"></div>
+    <div id="table" class="table-box"></div>
+  </div>
+
+  <script>
+    const ds = new SpottyFire.DataStore();
+    ds.loadCSV('../data/sample-employees.csv').then(() => {
+      // Add a computed column
+      ds.addCalculatedColumn('AnnualSalary', '[Salary] * 12');
+
+      // Toolbar & UI
+      SpottyFire.Toolbar('#toolbar', ds, {
+        showExport: true,
+        showThemeToggle: true,
+      });
+      SpottyFire.FormulaBar('#formula', ds);
+      SpottyFire.FilterPanel('#filters', ds, {
+        columns: ['Department', 'Region', 'Gender', 'Salary', 'Age']
+      });
+
+      // Charts
+      SpottyFire.BarChart('#bar', ds, {
+        category: 'Department',
+        value: 'Salary',
+        aggregation: 'avg',
+        showValues: true,
+        title: 'Avg Salary by Department'
+      });
+
+      SpottyFire.ScatterPlot('#scatter', ds, {
+        x: 'Age',
+        y: 'Salary',
+        colorBy: 'Department',
+        title: 'Age vs Salary Distribution'
+      });
+
+      SpottyFire.LineChart('#line', ds, {
+        x: 'HireDate',
+        y: ['Salary'],
+        groupBy: 'Department',
+        aggregation: 'avg',
+        title: 'Salary by Hire Date',
+        smooth: true,
+      });
+
+      SpottyFire.PieChart('#pie', ds, {
+        category: 'Region',
+        value: 'Salary',
+        aggregation: 'sum',
+        title: 'Total Salary by Region',
+        showPercent: true,
+      });
+
+      SpottyFire.HeatMap('#heatmap', ds, {
+        x: 'Department',
+        y: 'Region',
+        value: 'PerformanceScore',
+        aggregation: 'avg',
+        showValues: true,
+        title: 'Avg Performance by Dept & Region'
+      });
+
+      SpottyFire.DataTable('#table', ds, {
+        columns: ['Name', 'Department', 'Region', 'Salary', 'AnnualSalary', 'Age', 'PerformanceScore'],
+        showOnlyMarked: false,
+        title: 'Employee Details'
+      });
+    });
+  </script>
+</body>
+</html>

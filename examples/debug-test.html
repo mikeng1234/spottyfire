@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpottyFire — Debug Test</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="../dist/spottyfire.js"></script>
+  <style>
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .full { grid-column: 1 / -1; }
+    .chart { min-height: 380px; }
+    .table { height: 320px; }
+    h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px; }
+    p.sub { color: var(--sl-text-secondary); font-size: 13px; margin: 0 0 8px; }
+    #status {
+      font-size: 12px; padding: 8px 14px; border-radius: 8px;
+      background: var(--sl-panel-bg); border: 1px solid var(--sl-panel-border);
+      color: var(--sl-text-secondary); margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="grid">
+    <!-- Header -->
+    <div class="full">
+      <h1>SpottyFire Debug Test</h1>
+      <p class="sub">
+        Test all chart types + cross-chart marking + filters + formulas.
+        Click bars/points/slices to mark. Shift+click to add. Escape to clear.
+      </p>
+    </div>
+
+    <!-- Toolbar + Formula -->
+    <div id="toolbar" class="full"></div>
+    <div id="formula" class="full"></div>
+
+    <!-- Charts -->
+    <div id="bar" class="chart"></div>
+    <div id="scatter" class="chart"></div>
+    <div id="pie" class="chart"></div>
+    <div id="line" class="chart"></div>
+    <div id="heatmap" class="chart full"></div>
+    <div id="table" class="table full"></div>
+
+    <!-- Status log -->
+    <div id="status" class="full">Loading...</div>
+  </div>
+
+  <script>
+    var log = function(msg) {
+      var el = document.getElementById('status');
+      el.textContent = msg;
+      console.log('[DEBUG] ' + msg);
+    };
+
+    log('Initializing DataStore...');
+    var ds = new SpottyFire.DataStore();
+
+    ds.loadCSV('../data/sample-employees.csv').then(function() {
+      log('CSV loaded: ' + ds.getRowCount() + ' rows, columns: ' + ds.getColumnNames().join(', '));
+
+      // Add computed columns
+      ds.addCalculatedColumn('AnnualSalary', '[Salary] * 12');
+      ds.addCalculatedColumn('TotalComp', '[Salary] + [Bonus]');
+      ds.addCalculatedColumn('Bracket', 'If([Salary] > 55000, "High", If([Salary] > 35000, "Mid", "Low"))');
+      log('Computed columns added: AnnualSalary, TotalComp, Bracket');
+
+      // Toolbar
+      SpottyFire.Toolbar('#toolbar', ds, {
+        showExport: true,
+        showThemeToggle: true,
+      });
+
+      // Formula bar
+      SpottyFire.FormulaBar('#formula', ds);
+
+      // Bar Chart
+      SpottyFire.BarChart('#bar', ds, {
+        category: 'Department',
+        value: 'Salary',
+        aggregation: 'avg',
+        showValues: true,
+        title: 'Avg Salary by Department'
+      });
+
+      // Scatter Plot — showOnlyMarked: only shows data selected in other charts
+      SpottyFire.ScatterPlot('#scatter', ds, {
+        x: 'Age',
+        y: 'Salary',
+        colorBy: 'Department',
+        pointSize: 7,
+        showOnlyMarked: true,
+        title: 'Age vs Salary (marked only)'
+      });
+
+      // Pie Chart
+      SpottyFire.PieChart('#pie', ds, {
+        category: 'Region',
+        value: 'Salary',
+        aggregation: 'count',
+        title: 'Headcount by Region',
+        showPercent: true,
+        hole: 0.45,
+      });
+
+      // Line Chart
+      SpottyFire.LineChart('#line', ds, {
+        x: 'HireDate',
+        y: ['Salary'],
+        groupBy: 'Department',
+        title: 'Salary by Hire Date',
+        smooth: true,
+      });
+
+      // HeatMap
+      SpottyFire.HeatMap('#heatmap', ds, {
+        x: 'Department',
+        y: 'Region',
+        value: 'PerformanceScore',
+        aggregation: 'avg',
+        showValues: true,
+        title: 'Avg Performance: Dept x Region'
+      });
+
+      // DataTable
+      SpottyFire.DataTable('#table', ds, {
+        columns: ['Name', 'Department', 'Region', 'Salary', 'Bonus', 'TotalComp', 'Bracket', 'Age', 'PerformanceScore'],
+        showOnlyMarked: false,
+        pageSize: 25,
+        title: 'All Employees (click rows to mark)'
+      });
+
+      // Listen to marking for debug
+      ds._markingManager.on('marking-changed', function(e) {
+        log('Marking: ' + e.markedIndices.size + ' rows selected (action: ' + e.action + ', source: ' + (e.source || 'n/a') + ')');
+      });
+
+      log('All 6 charts rendered. Ready to test!');
+    }).catch(function(err) {
+      log('ERROR: ' + err.message);
+      console.error(err);
+    });
+  </script>
+</body>
+</html>

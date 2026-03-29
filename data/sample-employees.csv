@@ -1,0 +1,201 @@
+EmployeeID,Name,Department,Region,HireDate,Salary,Bonus,PerformanceScore,Age,Gender,IsActive
+EMP001,Juan Santos,Engineering,NCR,2019-03-15,72000,8500,4.2,34,M,true
+EMP002,Maria Reyes,Sales,NCR,2020-07-22,45000,6200,3.8,28,F,true
+EMP003,Jose Cruz,HR,Region III,2017-11-08,38000,4100,3.5,41,M,true
+EMP004,Ana Garcia,Finance,NCR,2021-02-14,58000,7300,4.5,30,F,true
+EMP005,Carlos Ramos,Operations,Region IV-A,2016-05-30,42000,5000,3.2,45,M,true
+EMP006,Patricia Dela Cruz,Engineering,NCR,2022-09-01,68000,9000,4.7,27,F,true
+EMP007,Miguel Mendoza,Sales,Region VII,2018-04-17,40000,3800,3.6,36,M,true
+EMP008,Sofia Torres,HR,NCR,2023-01-10,35000,2500,3.9,25,F,true
+EMP009,Antonio Villanueva,Finance,Region III,2015-08-23,55000,6800,4.1,50,M,true
+EMP010,Rosa Gonzales,Operations,Region IV-A,2020-12-05,39000,4400,3.3,33,F,true
+EMP011,Rafael Bautista,Engineering,NCR,2019-06-18,75000,10200,4.8,38,M,true
+EMP012,Carmen Lopez,Sales,NCR,2021-10-29,43000,5100,3.7,31,F,true
+EMP013,Luis Rivera,HR,Region VII,2017-03-14,36000,3200,3.4,44,M,true
+EMP014,Isabella Fernandez,Finance,NCR,2022-07-07,61000,7900,4.4,29,F,true
+EMP015,Marco Aquino,Operations,Region III,2016-11-20,41000,4700,3.1,47,M,true
+EMP016,Gabriela Flores,Engineering,NCR,2020-04-03,70000,9500,4.6,32,F,true
+EMP017,Paolo Pascual,Sales,Region IV-A,2018-09-25,44000,5500,3.9,37,M,true
+EMP018,Andrea Dizon,HR,NCR,2023-05-12,34000,1800,3.3,24,F,true
+EMP019,Diego Manalo,Finance,Region VII,2015-02-28,52000,6400,4.0,52,M,true
+EMP020,Jasmine Soriano,Operations,NCR,2021-08-16,40000,4200,3.6,30,F,true
+EMP021,Eduardo Santos,Engineering,Region III,2019-12-04,73000,8800,4.3,35,M,true
+EMP022,Lourdes Reyes,Sales,NCR,2020-03-19,46000,6500,4.1,27,F,true
+EMP023,Fernando Cruz,HR,NCR,2017-07-31,37000,3700,3.6,42,M,true
+EMP024,Maricel Garcia,Finance,Region IV-A,2021-11-22,59000,7600,4.6,31,F,true
+EMP025,Roberto Ramos,Operations,NCR,2016-09-14,43000,5300,3.4,46,M,false
+EMP026,Teresita Dela Cruz,Engineering,Region VII,2022-04-28,67000,8700,4.5,26,F,true
+EMP027,Ernesto Mendoza,Sales,NCR,2018-01-09,41000,4000,3.5,39,M,true
+EMP028,Cecilia Torres,HR,Region III,2023-08-03,36000,2900,4.0,26,F,true
+EMP029,Alfredo Villanueva,Finance,NCR,2015-06-16,57000,7100,4.2,51,M,true
+EMP030,Natividad Gonzales,Operations,Region IV-A,2020-10-27,38000,4100,3.2,34,F,true
+EMP031,Rodolfo Bautista,Engineering,NCR,2019-04-08,77000,10800,4.9,39,M,true
+EMP032,Remedios Lopez,Sales,NCR,2021-12-14,44000,5400,3.8,32,F,true
+EMP033,Domingo Rivera,HR,Region VII,2017-05-21,35000,3000,3.3,45,M,false
+EMP034,Consuelo Fernandez,Finance,NCR,2022-08-30,63000,8200,4.5,28,F,true
+EMP035,Renato Aquino,Operations,Region III,2016-03-07,40000,4600,3.0,48,M,true
+EMP036,Maribel Flores,Engineering,NCR,2020-06-23,71000,9700,4.7,33,F,true
+EMP037,Nestor Pascual,Sales,Region IV-A,2018-11-05,42000,5200,3.8,38,M,true
+EMP038,Rosario Dizon,HR,NCR,2023-02-18,35000,2200,3.5,25,F,true
+EMP039,Virgilio Manalo,Finance,Region VII,2015-09-10,54000,6700,4.1,53,M,true
+EMP040,Florencia Soriano,Operations,NCR,2021-07-04,41000,4500,3.7,31,F,true
+EMP041,Armando Santos,Engineering,NCR,2019-01-27,74000,9100,4.4,36,M,true
+EMP042,Evangeline Reyes,Sales,NCR,2020-05-08,45000,6100,3.9,29,F,true
+EMP043,Generoso Cruz,HR,Region III,2017-09-19,38000,3900,3.7,43,M,true
+EMP044,Melinda Garcia,Finance,NCR,2021-03-31,60000,7800,4.7,30,F,true
+EMP045,Ricardo Ramos,Operations,Region IV-A,2016-07-12,42000,4900,3.3,47,M,true
+EMP046,Analyn Dela Cruz,Engineering,NCR,2022-11-24,69000,9200,4.6,27,F,true
+EMP047,Benedicto Mendoza,Sales,Region VII,2018-06-06,40000,3600,3.4,40,M,false
+EMP048,Estrella Torres,HR,NCR,2023-04-15,34000,2000,3.8,24,F,true
+EMP049,Amado Villanueva,Finance,Region III,2015-11-28,56000,7000,4.3,51,M,true
+EMP050,Wilhelmina Gonzales,Operations,NCR,2020-09-16,39000,4300,3.5,34,F,true
+EMP051,Crisanto Bautista,Engineering,NCR,2019-07-29,76000,10500,4.8,37,M,true
+EMP052,Epifania Lopez,Sales,Region IV-A,2021-11-10,43000,5000,3.7,31,F,true
+EMP053,Laureano Rivera,HR,NCR,2017-04-02,36000,3400,3.5,44,M,true
+EMP054,Dolores Fernandez,Finance,NCR,2022-06-21,62000,8000,4.4,29,F,true
+EMP055,Ceferino Aquino,Operations,Region VII,2016-12-13,41000,4800,3.2,49,M,true
+EMP056,Perla Flores,Engineering,NCR,2020-02-26,69000,9300,4.5,33,F,true
+EMP057,Herminio Pascual,Sales,Region III,2018-08-17,44000,5600,4.0,38,M,true
+EMP058,Adoracion Dizon,HR,NCR,2023-06-30,35000,2700,3.6,26,F,true
+EMP059,Macario Manalo,Finance,Region IV-A,2015-04-22,53000,6600,4.0,52,M,true
+EMP060,Flordeliza Soriano,Operations,NCR,2021-09-11,40000,4100,3.4,30,F,true
+EMP061,Simplicio Santos,Engineering,NCR,2019-10-14,73000,8600,4.3,38,M,true
+EMP062,Rosalinda Reyes,Sales,NCR,2020-08-25,46000,6300,4.0,28,F,true
+EMP063,Timoteo Cruz,HR,Region VII,2017-12-07,37000,3500,3.4,43,M,false
+EMP064,Nilda Garcia,Finance,NCR,2021-04-19,61000,8100,4.8,30,F,true
+EMP065,Filomeno Ramos,Operations,Region III,2016-10-01,42000,5100,3.3,47,M,true
+EMP066,Alicia Dela Cruz,Engineering,NCR,2022-03-13,68000,8900,4.6,27,F,true
+EMP067,Moises Mendoza,Sales,Region IV-A,2018-07-24,41000,4100,3.6,37,M,true
+EMP068,Milagros Torres,HR,NCR,2023-07-05,36000,3100,4.1,25,F,true
+EMP069,Anastacio Villanueva,Finance,NCR,2015-03-17,55000,6900,4.2,54,M,true
+EMP070,Nelda Gonzales,Operations,Region VII,2020-11-28,39000,4000,3.3,34,F,true
+EMP071,Cipriano Bautista,Engineering,NCR,2019-09-02,75000,10000,4.7,39,M,true
+EMP072,Corazon Lopez,Sales,NCR,2021-12-20,44000,5700,3.9,32,F,true
+EMP073,Benigno Rivera,HR,Region III,2017-06-14,35000,3300,3.5,45,M,true
+EMP074,Asuncion Fernandez,Finance,NCR,2022-10-05,64000,8400,4.5,29,F,true
+EMP075,Elpidio Aquino,Operations,Region IV-A,2016-04-26,40000,4700,3.1,48,M,false
+EMP076,Zenaida Flores,Engineering,NCR,2020-07-09,70000,9600,4.6,32,F,true
+EMP077,Nicanor Pascual,Sales,Region VII,2018-12-20,42000,4900,3.7,40,M,true
+EMP078,Carmelita Dizon,HR,NCR,2023-03-28,35000,2400,3.8,24,F,true
+EMP079,Paquito Manalo,Finance,Region III,2015-07-11,54000,6500,4.0,53,M,true
+EMP080,Teofila Soriano,Operations,NCR,2021-06-22,41000,4600,3.6,31,F,true
+EMP081,Emiliano Santos,Engineering,NCR,2019-02-05,74000,9300,4.4,36,M,true
+EMP082,Soledad Reyes,Sales,Region IV-A,2020-09-16,45000,5900,3.8,27,F,true
+EMP083,Gregorio Cruz,HR,NCR,2017-02-27,38000,3800,3.6,42,M,true
+EMP084,Lilia Garcia,Finance,NCR,2021-05-08,59000,7700,4.6,30,F,true
+EMP085,Victorino Ramos,Operations,Region VII,2016-08-19,43000,5200,3.4,47,M,true
+EMP086,Ligaya Dela Cruz,Engineering,NCR,2022-05-31,67000,8600,4.5,26,F,true
+EMP087,Eugenio Mendoza,Sales,Region III,2018-03-12,41000,4300,3.5,38,M,true
+EMP088,Clarita Torres,HR,NCR,2023-09-23,36000,3000,4.0,25,F,true
+EMP089,Leoncio Villanueva,Finance,NCR,2015-10-04,57000,7200,4.2,51,M,true
+EMP090,Presentacion Gonzales,Operations,Region IV-A,2020-04-15,38000,4200,3.3,34,F,true
+EMP091,Patrocinio Bautista,Engineering,NCR,2019-11-26,77000,11000,4.9,37,M,true
+EMP092,Felicidad Lopez,Sales,NCR,2021-01-07,43000,5200,3.7,31,F,false
+EMP093,Iluminado Rivera,HR,Region VII,2017-08-18,36000,3600,3.6,44,M,true
+EMP094,Paz Fernandez,Finance,NCR,2022-12-29,62000,7900,4.3,28,F,true
+EMP095,Constancio Aquino,Operations,Region III,2016-02-09,41000,5000,3.2,49,M,true
+EMP096,Purificacion Flores,Engineering,NCR,2020-10-20,71000,9800,4.7,33,F,true
+EMP097,Honesto Pascual,Sales,Region IV-A,2018-05-31,44000,5800,4.1,39,M,true
+EMP098,Nena Dizon,HR,NCR,2023-04-11,34000,2100,3.5,24,F,true
+EMP099,Domingo Manalo,Finance,Region VII,2015-12-22,53000,6800,4.1,52,M,true
+EMP100,Avelina Soriano,Operations,NCR,2021-08-02,40000,4400,3.5,30,F,true
+EMP101,Bernardo Santos,Engineering,NCR,2019-05-13,73000,8400,4.2,35,M,true
+EMP102,Magdalena Reyes,Sales,NCR,2020-06-24,46000,6700,4.2,28,F,true
+EMP103,Isidoro Cruz,HR,Region III,2017-10-05,37000,4000,3.7,43,M,false
+EMP104,Mirasol Garcia,Finance,NCR,2021-02-16,61000,8300,4.8,31,F,true
+EMP105,Serafin Ramos,Operations,Region IV-A,2016-06-27,42000,5400,3.5,46,M,true
+EMP106,Cynthia Dela Cruz,Engineering,NCR,2022-08-08,68000,9100,4.6,27,F,true
+EMP107,Felixberto Mendoza,Sales,Region VII,2018-10-19,40000,3700,3.4,40,M,true
+EMP108,Victoria Torres,HR,NCR,2023-11-30,35000,2600,3.9,25,F,true
+EMP109,Gavino Villanueva,Finance,Region III,2015-05-12,56000,7100,4.3,51,M,true
+EMP110,Resurreccion Gonzales,Operations,NCR,2020-12-23,39000,4500,3.6,34,F,true
+EMP111,Prudencio Bautista,Engineering,NCR,2019-08-04,76000,10600,4.8,38,M,true
+EMP112,Luz Lopez,Sales,Region IV-A,2021-10-15,44000,5100,3.7,32,F,true
+EMP113,Saturnino Rivera,HR,NCR,2017-03-26,36000,3100,3.3,45,M,true
+EMP114,Natividad Fernandez,Finance,NCR,2022-07-06,63000,8100,4.4,29,F,true
+EMP115,Hermogenes Aquino,Operations,Region VII,2016-11-17,41000,4900,3.2,48,M,false
+EMP116,Josefina Flores,Engineering,NCR,2020-03-28,70000,9400,4.5,32,F,true
+EMP117,Modesto Pascual,Sales,Region III,2018-07-09,42000,5300,3.9,39,M,true
+EMP118,Restituta Dizon,HR,NCR,2023-01-20,35000,2300,3.7,25,F,true
+EMP119,Calixto Manalo,Finance,Region IV-A,2015-08-31,54000,6600,4.0,53,M,true
+EMP120,Violeta Soriano,Operations,NCR,2021-05-11,41000,4700,3.7,31,F,true
+EMP121,Apolinario Santos,Engineering,NCR,2019-12-22,74000,9200,4.3,37,M,true
+EMP122,Rosario Reyes,Sales,NCR,2020-04-02,45000,6400,4.0,28,F,true
+EMP123,Tranquilino Cruz,HR,Region VII,2017-07-13,38000,3700,3.5,43,M,true
+EMP124,Cristina Garcia,Finance,NCR,2021-03-24,60000,7900,4.7,30,F,true
+EMP125,Abundio Ramos,Operations,Region III,2016-09-04,42000,5000,3.3,47,M,true
+EMP126,Miraflor Dela Cruz,Engineering,NCR,2022-06-15,69000,9000,4.6,26,F,true
+EMP127,Celestino Mendoza,Sales,Region IV-A,2018-02-26,41000,4200,3.6,38,M,false
+EMP128,Leonora Torres,HR,NCR,2023-10-07,36000,3200,4.1,25,F,true
+EMP129,Graciano Villanueva,Finance,NCR,2015-04-18,55000,7000,4.2,51,M,true
+EMP130,Benita Gonzales,Operations,Region VII,2020-08-29,38000,4100,3.3,34,F,true
+EMP131,Baldomero Bautista,Engineering,NCR,2019-03-10,75000,10100,4.8,38,M,true
+EMP132,Magnolia Lopez,Sales,NCR,2021-11-20,44000,5600,3.8,32,F,true
+EMP133,Fortunato Rivera,HR,Region III,2017-05-01,35000,3500,3.6,45,M,true
+EMP134,Caridad Fernandez,Finance,NCR,2022-09-12,64000,8500,4.5,29,F,true
+EMP135,Remigio Aquino,Operations,Region IV-A,2016-03-23,40000,4800,3.1,48,M,true
+EMP136,Dolores Flores,Engineering,NCR,2020-07-03,72000,9900,4.7,33,F,true
+EMP137,Valeriano Pascual,Sales,Region VII,2018-09-14,43000,5000,3.8,40,M,true
+EMP138,Resurreccion Dizon,HR,NCR,2023-05-25,34000,2000,3.5,24,F,true
+EMP139,Juanito Manalo,Finance,Region III,2015-10-06,53000,6700,4.1,52,M,true
+EMP140,Felomina Soriano,Operations,NCR,2021-07-17,41000,4500,3.6,30,F,false
+EMP141,Sotero Santos,Engineering,NCR,2019-06-28,73000,8700,4.3,36,M,true
+EMP142,Angelita Reyes,Sales,NCR,2020-11-08,45000,6600,4.1,28,F,true
+EMP143,Florencio Cruz,HR,Region IV-A,2017-12-19,37000,3800,3.6,43,M,true
+EMP144,Adela Garcia,Finance,NCR,2021-04-30,60000,8000,4.8,31,F,true
+EMP145,Justiniano Ramos,Operations,Region VII,2016-10-10,43000,5300,3.4,47,M,true
+EMP146,Perla Dela Cruz,Engineering,NCR,2022-03-21,68000,8800,4.5,27,F,true
+EMP147,Arsenio Mendoza,Sales,Region III,2018-06-01,41000,4400,3.5,38,M,true
+EMP148,Eufemia Torres,HR,NCR,2023-08-12,36000,3000,4.0,25,F,true
+EMP149,Catalino Villanueva,Finance,NCR,2015-11-23,57000,7300,4.2,51,M,true
+EMP150,Lolita Gonzales,Operations,Region IV-A,2020-03-03,39000,4300,3.5,33,F,true
+EMP151,Octavio Bautista,Engineering,NCR,2019-10-14,76000,10700,4.9,37,M,true
+EMP152,Primitiva Lopez,Sales,NCR,2021-12-25,44000,5300,3.7,32,F,true
+EMP153,Epifanio Rivera,HR,Region VII,2017-04-05,36000,3300,3.4,44,M,false
+EMP154,Heraclia Fernandez,Finance,NCR,2022-11-16,62000,8000,4.3,28,F,true
+EMP155,Robustiano Aquino,Operations,Region III,2016-05-27,41000,5100,3.2,49,M,true
+EMP156,Salvacion Flores,Engineering,NCR,2020-09-07,70000,9500,4.6,32,F,true
+EMP157,Ladislao Pascual,Sales,Region IV-A,2018-11-18,43000,5700,4.0,39,M,true
+EMP158,Purisima Dizon,HR,NCR,2023-02-27,35000,2500,3.8,25,F,true
+EMP159,Meliton Manalo,Finance,Region VII,2015-02-08,54000,6900,4.1,52,M,true
+EMP160,Esperanza Soriano,Operations,NCR,2021-09-18,40000,4400,3.5,30,F,true
+EMP161,Proceso Santos,Engineering,NCR,2019-01-19,74000,9000,4.4,38,M,true
+EMP162,Teresita Reyes,Sales,NCR,2020-05-30,46000,6800,4.2,27,F,true
+EMP163,Severo Cruz,HR,Region III,2017-09-10,38000,3900,3.7,42,M,true
+EMP164,Immaculada Garcia,Finance,NCR,2021-06-11,61000,8200,4.7,30,F,true
+EMP165,Tiburcio Ramos,Operations,Region IV-A,2016-12-22,42000,5200,3.3,47,M,true
+EMP166,Estrellita Dela Cruz,Engineering,NCR,2022-04-02,67000,8500,4.5,26,F,true
+EMP167,Cornelio Mendoza,Sales,Region VII,2018-08-13,40000,3900,3.5,39,M,true
+EMP168,Concepcion Torres,HR,NCR,2023-07-24,36000,3100,4.1,24,F,true
+EMP169,Benedicto Villanueva,Finance,Region III,2015-06-05,56000,7100,4.3,51,M,false
+EMP170,Josefina Gonzales,Operations,NCR,2020-10-16,39000,4600,3.6,34,F,true
+EMP171,Delfin Bautista,Engineering,NCR,2019-07-27,75000,10300,4.8,38,M,true
+EMP172,Presentacion Lopez,Sales,Region IV-A,2021-10-27,44000,5100,3.7,31,F,true
+EMP173,Maximo Rivera,HR,NCR,2017-02-08,35000,3200,3.5,44,M,true
+EMP174,Milagros Fernandez,Finance,NCR,2022-07-19,63000,8300,4.4,29,F,true
+EMP175,Aurelio Aquino,Operations,Region VII,2016-01-29,41000,5000,3.2,49,M,true
+EMP176,Natividad Flores,Engineering,NCR,2020-11-09,71000,9700,4.6,33,F,true
+EMP177,Paciano Pascual,Sales,Region III,2018-04-20,42000,5400,3.9,39,M,true
+EMP178,Celestina Dizon,HR,NCR,2023-12-01,35000,2200,3.6,25,F,true
+EMP179,Claro Manalo,Finance,Region IV-A,2015-09-12,53000,6700,4.0,53,M,true
+EMP180,Rosita Soriano,Operations,NCR,2021-06-22,41000,4700,3.7,31,F,true
+EMP181,Mariano Santos,Engineering,NCR,2019-04-03,73000,8500,4.2,37,M,true
+EMP182,Nellie Reyes,Sales,NCR,2020-07-14,45000,6500,4.0,28,F,false
+EMP183,Leandro Cruz,HR,Region VII,2017-11-25,37000,3700,3.5,43,M,true
+EMP184,Aurora Garcia,Finance,NCR,2021-03-06,60000,7800,4.6,30,F,true
+EMP185,Mauro Ramos,Operations,Region III,2016-08-17,42000,5000,3.3,47,M,true
+EMP186,Loreta Dela Cruz,Engineering,NCR,2022-06-28,68000,9100,4.6,27,F,true
+EMP187,Proceso Mendoza,Sales,Region IV-A,2018-01-09,41000,4100,3.5,38,M,true
+EMP188,Eusebia Torres,HR,NCR,2023-09-19,36000,2900,3.9,25,F,true
+EMP189,Ruperto Villanueva,Finance,NCR,2015-12-31,57000,7200,4.2,51,M,true
+EMP190,Felicitas Gonzales,Operations,Region VII,2020-09-29,38000,4200,3.4,33,F,true
+EMP191,Hermenegildo Bautista,Engineering,NCR,2019-11-10,76000,10900,4.8,38,M,true
+EMP192,Pureza Lopez,Sales,NCR,2021-11-21,44000,5500,3.8,32,F,true
+EMP193,Deogracias Rivera,HR,Region III,2017-06-02,36000,3400,3.6,44,M,true
+EMP194,Amparo Fernandez,Finance,NCR,2022-10-13,62000,8100,4.5,29,F,true
+EMP195,Telesforo Aquino,Operations,Region IV-A,2016-04-24,40000,4900,3.1,48,M,false
+EMP196,Visitacion Flores,Engineering,NCR,2020-08-04,70000,9600,4.7,32,F,true
+EMP197,Patricio Pascual,Sales,Region VII,2018-10-15,43000,5100,3.8,40,M,true
+EMP198,Soledad Dizon,HR,NCR,2023-03-26,35000,2400,3.7,24,F,true
+EMP199,Ildefonso Manalo,Finance,Region III,2015-07-07,54000,6800,4.1,52,M,true
+EMP200,Gloria Soriano,Operations,NCR,2021-08-18,41000,4600,3.6,31,F,true

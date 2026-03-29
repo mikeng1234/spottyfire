@@ -1,0 +1,29 @@
+{
+  "name": "spottyfire",
+  "version": "1.0.0",
+  "description": "Drop-in interactive charts with cross-chart marking — like Spotfire, but open-source.",
+  "main": "dist/spottyfire.js",
+  "files": [
+    "dist/",
+    "src/"
+  ],
+  "scripts": {
+    "build": "bash build.sh"
+  },
+  "keywords": [
+    "charts",
+    "visualization",
+    "dashboard",
+    "cross-filtering",
+    "marking",
+    "plotly",
+    "interactive",
+    "linked-charts"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": ""
+  }
+}

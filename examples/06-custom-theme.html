@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpottyFire — Custom Theme</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="../dist/spottyfire.js"></script>
+  <style>
+    .demo { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px 0; }
+    .subtitle { color: var(--sl-text-secondary); font-size: 14px; margin: 0 0 24px 0; }
+    .code-block {
+      background: var(--sl-panel-bg);
+      border: 1px solid var(--sl-panel-border);
+      border-radius: 10px;
+      padding: 16px 20px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 13px;
+      color: var(--sl-text-primary);
+      overflow-x: auto;
+      margin-bottom: 24px;
+      white-space: pre;
+      line-height: 1.6;
+    }
+    .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .chart-box { min-height: 380px; }
+  </style>
+</head>
+<body>
+  <div class="demo">
+    <h1>Custom Theme Example</h1>
+    <p class="subtitle">Define your own branded theme by passing an object to SpottyFire.setTheme()</p>
+
+    <div class="code-block">SpottyFire.setTheme({
+  name: 'genxcript',
+  background: '#0a0f1a',
+  panelBg: '#111827',
+  panelBorder: '#1f2937',
+  panelShadow: '0 4px 20px rgba(0,0,0,0.4)',
+  textPrimary: '#f3f4f6',
+  textSecondary: '#9ca3af',
+  accent: '#2563eb',
+  marking: '#f59e0b',
+  palette: ['#2563eb', '#7c3aed', '#059669', '#d97706', '#dc2626', '#0891b2'],
+});</div>
+
+    <div id="toolbar" style="margin-bottom:16px;"></div>
+
+    <div class="charts">
+      <div id="bar" class="chart-box"></div>
+      <div id="scatter" class="chart-box"></div>
+    </div>
+    <div id="table" style="height:300px;margin-top:16px;"></div>
+  </div>
+
+  <script>
+    // Apply custom theme
+    SpottyFire.setTheme({
+      name: 'genxcript',
+      background: '#0a0f1a',
+      panelBg: '#111827',
+      panelBorder: '#1f2937',
+      panelShadow: '0 4px 20px rgba(0,0,0,0.4)',
+      textPrimary: '#f3f4f6',
+      textSecondary: '#9ca3af',
+      textMuted: '#6b7280',
+      gridLines: 'rgba(255,255,255,0.05)',
+      accent: '#2563eb',
+      marking: '#f59e0b',
+      unmarkedOpacity: 0.1,
+      palette: ['#2563eb', '#7c3aed', '#059669', '#d97706', '#dc2626', '#0891b2'],
+      sequential: ['#0a0f1a', '#1e3a5f', '#2563eb', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe'],
+      diverging: ['#dc2626', '#f87171', '#fecaca', '#f3f4f6', '#bfdbfe', '#60a5fa', '#2563eb'],
+    });
+
+    const ds = new SpottyFire.DataStore();
+    ds.loadCSV('../data/sample-employees.csv').then(() => {
+      SpottyFire.Toolbar('#toolbar', ds, {
+        showExport: true,
+        showThemeToggle: false,
+      });
+
+      SpottyFire.BarChart('#bar', ds, {
+        category: 'Department',
+        value: 'Salary',
+        aggregation: 'avg',
+        showValues: true,
+        title: 'GenXcript — Avg Salary'
+      });
+
+      SpottyFire.ScatterPlot('#scatter', ds, {
+        x: 'Age',
+        y: 'Salary',
+        colorBy: 'Department',
+        title: 'GenXcript — Employee Distribution'
+      });
+
+      SpottyFire.DataTable('#table', ds, {
+        columns: ['Name', 'Department', 'Salary', 'Age', 'Region', 'PerformanceScore'],
+        showOnlyMarked: true,
+        title: 'Selected Employees'
+      });
+    });
+  </script>
+</body>
+</html>
