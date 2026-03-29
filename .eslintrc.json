@@ -1,0 +1,26 @@
+{
+  "env": {
+    "browser": true,
+    "es6": true
+  },
+  "globals": {
+    "Plotly": "readonly",
+    "Papa": "readonly",
+    "SpottyFire": "writable",
+    "Spotlight": "writable"
+  },
+  "parserOptions": {
+    "ecmaVersion": 2020,
+    "sourceType": "script"
+  },
+  "rules": {
+    "no-unused-vars": ["warn", { "args": "none" }],
+    "no-console": "off",
+    "no-undef": "error",
+    "no-redeclare": "warn",
+    "eqeqeq": ["warn", "smart"],
+    "curly": ["warn", "multi-line"],
+    "no-var": "off",
+    "prefer-const": "off"
+  }
+}

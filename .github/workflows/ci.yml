@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Build & Verify
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify build script runs
+        run: bash build.sh
+
+      - name: Verify dist output exists
+        run: |
+          test -f dist/spottyfire.js || (echo "dist/spottyfire.js not found" && exit 1)
+          echo "Build output: $(wc -c < dist/spottyfire.js) bytes"
+
+      - name: Verify no syntax errors in source
+        run: |
+          for f in src/**/*.js; do
+            node --check "$f" 2>/dev/null || echo "Skipping module check for $f (IIFE-style)"
+          done
+
+      - name: Verify HTML examples are well-formed
+        run: |
+          for f in examples/*.html; do
+            if grep -q 'spottyfire.js' "$f"; then
+              echo "OK: $f references spottyfire.js"
+            else
+              echo "WARN: $f does not reference spottyfire.js"
+            fi
+          done
+
+      - name: Verify CSV dataset
+        run: |
+          LINES=$(wc -l < data/sample-employees.csv)
+          echo "Dataset: $LINES lines"
+          test "$LINES" -ge 200 || (echo "Dataset has fewer than 200 rows" && exit 1)

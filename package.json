@@ -3,12 +3,17 @@
   "version": "1.0.0",
   "description": "Drop-in interactive charts with cross-chart marking — like Spotfire, but open-source.",
   "main": "dist/spottyfire.js",
+  "browser": "dist/spottyfire.js",
   "files": [
     "dist/",
     "src/"
   ],
   "scripts": {
-    "build": "bash build.sh"
+    "build": "bash build.sh",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format": "prettier --write src/ examples/",
+    "format:check": "prettier --check src/ examples/"
   },
   "keywords": [
     "charts",
@@ -18,12 +23,28 @@
     "marking",
     "plotly",
     "interactive",
-    "linked-charts"
+    "linked-charts",
+    "spotfire",
+    "data-visualization",
+    "scatter-plot",
+    "bar-chart",
+    "heatmap"
   ],
-  "author": "",
+  "author": "mikeng1234",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/mikeng1234/spottyfire.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mikeng1234/spottyfire/issues"
+  },
+  "homepage": "https://github.com/mikeng1234/spottyfire#readme",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0"
   }
 }

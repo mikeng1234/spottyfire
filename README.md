@@ -1,8 +1,13 @@
 # SpottyFire
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![CI](https://github.com/mikeng1234/spottyfire/actions/workflows/ci.yml/badge.svg)](https://github.com/mikeng1234/spottyfire/actions/workflows/ci.yml)
+[![GitHub Stars](https://img.shields.io/github/stars/mikeng1234/spottyfire?style=social)](https://github.com/mikeng1234/spottyfire)
+[![GitHub Issues](https://img.shields.io/github/issues/mikeng1234/spottyfire)](https://github.com/mikeng1234/spottyfire/issues)
+
 **Drop-in interactive charts with cross-chart marking — like Spotfire, but open-source.**
 
-[Quick Start](#quick-start) | [Chart Types](#chart-types) | [Themes](#themes) | [API Reference](#api-reference)
+[Quick Start](#quick-start) | [Chart Types](#chart-types) | [Themes](#themes) | [API Reference](#api-reference) | [Contributing](CONTRIBUTING.md)
 
 > Screenshot/GIF placeholder: click a bar chart category and watch the scatter plot, pie chart, and table all respond instantly.
 
