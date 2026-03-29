@@ -9,6 +9,8 @@ class ScatterPlot extends BaseChart {
   refresh() {
     if (this._renderEmptyIfLimited()) return;
     var cfg = this._config;
+    if (this._validateNumericAxis(cfg.y, 'Y axis')) return;
+    if (this._validateNumericAxis(cfg.x, 'X axis')) return;
     var theme = ThemeManager.getTheme();
     var rows = this._getLimitedRows();
     var hasMarking = this._mm.hasMarking();

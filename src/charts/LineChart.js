@@ -9,6 +9,10 @@ class LineChart extends BaseChart {
   refresh() {
     if (this._renderEmptyIfLimited()) return;
     var cfg = this._config;
+    var yCols = Array.isArray(cfg.y) ? cfg.y : [cfg.y];
+    for (var _vi = 0; _vi < yCols.length; _vi++) {
+      if (this._validateNumericAxis(yCols[_vi], 'Y axis')) return;
+    }
     var theme = ThemeManager.getTheme();
     var rows = this._getLimitedRows();
     var hasMarking = this._mm.hasMarking();

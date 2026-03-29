@@ -9,6 +9,7 @@ class HeatMap extends BaseChart {
   refresh() {
     if (this._renderEmptyIfLimited()) return;
     var cfg = this._config;
+    if (cfg.aggregation !== 'count' && this._validateNumericAxis(cfg.value, 'Value')) return;
     var theme = ThemeManager.getTheme();
     var rows = this._getLimitedRows();
     var mm = this._mm;

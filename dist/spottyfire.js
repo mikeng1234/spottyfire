@@ -1068,6 +1068,45 @@ class BaseChart {
     return true;
   }
 
+  // Check if a column contains numeric data
+  _isNumericColumn(colName) {
+    if (!colName) return false;
+    var colInfo = this._ds._columns.find(function (c) { return c.name === colName; });
+    if (colInfo && colInfo.type === 'number') return true;
+    // Fallback: sample first 20 non-null values
+    var rows = this._ds._rows;
+    var numCount = 0, total = 0;
+    for (var i = 0; i < rows.length && total < 20; i++) {
+      var v = rows[i][colName];
+      if (v == null || v === '') continue;
+      total++;
+      if (typeof v === 'number' || !isNaN(parseFloat(v))) numCount++;
+    }
+    return total > 0 && numCount / total >= 0.5;
+  }
+
+  // Render an error state on the chart
+  _renderError(message, layoutOverrides) {
+    var theme = ThemeManager.getTheme();
+    var layout = ThemeManager.getPlotlyLayout(layoutOverrides || {});
+    layout.annotations = [{
+      text: '\u26A0 ' + message,
+      xref: 'paper', yref: 'paper', x: 0.5, y: 0.5,
+      showarrow: false,
+      font: { size: 13, color: theme.marking || '#f43f5e' },
+    }];
+    Plotly.react(this._getPlotDiv(), [], layout, this._plotlyConfig());
+    return true;
+  }
+
+  // Validate that value/Y columns are numeric; render error if not
+  _validateNumericAxis(colName, axisLabel) {
+    if (!colName) return false;
+    if (this._isNumericColumn(colName)) return false; // valid
+    this._renderError('"' + colName + '" is not a numeric column.\nSelect a numeric column for ' + (axisLabel || 'this axis') + '.');
+    return true; // had error
+  }
+
   refresh() {
     // Override in subclass
   }
@@ -1113,6 +1152,7 @@ class BarChart extends BaseChart {
   refresh() {
     if (this._renderEmptyIfLimited()) return;
     var cfg = this._config;
+    if (cfg.aggregation !== 'count' && this._validateNumericAxis(cfg.value, 'Value')) return;
     var theme = ThemeManager.getTheme();
     var rows = this._getLimitedRows();
     var cat = cfg.category;
@@ -1276,6 +1316,8 @@ class ScatterPlot extends BaseChart {
   refresh() {
     if (this._renderEmptyIfLimited()) return;
     var cfg = this._config;
+    if (this._validateNumericAxis(cfg.y, 'Y axis')) return;
+    if (this._validateNumericAxis(cfg.x, 'X axis')) return;
     var theme = ThemeManager.getTheme();
     var rows = this._getLimitedRows();
     var hasMarking = this._mm.hasMarking();
@@ -1453,6 +1495,10 @@ class LineChart extends BaseChart {
   refresh() {
     if (this._renderEmptyIfLimited()) return;
     var cfg = this._config;
+    var yCols = Array.isArray(cfg.y) ? cfg.y : [cfg.y];
+    for (var _vi = 0; _vi < yCols.length; _vi++) {
+      if (this._validateNumericAxis(yCols[_vi], 'Y axis')) return;
+    }
     var theme = ThemeManager.getTheme();
     var rows = this._getLimitedRows();
     var hasMarking = this._mm.hasMarking();
@@ -1581,6 +1627,7 @@ class PieChart extends BaseChart {
   refresh() {
     if (this._renderEmptyIfLimited()) return;
     var cfg = this._config;
+    if (cfg.aggregation !== 'count' && this._validateNumericAxis(cfg.value, 'Value')) return;
     var theme = ThemeManager.getTheme();
     var rows = this._getLimitedRows();
     var hasMarking = this._mm.hasMarking();
@@ -1703,6 +1750,7 @@ class HeatMap extends BaseChart {
   refresh() {
     if (this._renderEmptyIfLimited()) return;
     var cfg = this._config;
+    if (cfg.aggregation !== 'count' && this._validateNumericAxis(cfg.value, 'Value')) return;
     var theme = ThemeManager.getTheme();
     var rows = this._getLimitedRows();
     var mm = this._mm;
