@@ -7,9 +7,10 @@ class HeatMap extends BaseChart {
   }
 
   refresh() {
+    if (this._renderEmptyIfLimited()) return;
     var cfg = this._config;
     var theme = ThemeManager.getTheme();
-    var rows = this._ds.getFilteredRows();
+    var rows = this._getLimitedRows();
     var mm = this._mm;
     var hasMarking = mm.hasMarking();
 

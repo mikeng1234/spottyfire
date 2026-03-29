@@ -7,9 +7,10 @@ class BarChart extends BaseChart {
   }
 
   refresh() {
+    if (this._renderEmptyIfLimited()) return;
     var cfg = this._config;
     var theme = ThemeManager.getTheme();
-    var rows = this._ds.getFilteredRows();
+    var rows = this._getLimitedRows();
     var cat = cfg.category;
     var val = cfg.value;
     var agg = cfg.aggregation || 'sum';

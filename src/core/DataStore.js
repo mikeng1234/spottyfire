@@ -7,6 +7,21 @@ class DataStore {
     this._eventListeners = {};
     this._markingManager = new MarkingManager();
     this._filterEngine = new FilterEngine(this);
+    this._chartRegistry = {};   // chartId → { id, name, instance }
+  }
+
+  // ── Chart Registry ──
+  _registerChart(chart) {
+    var name = chart._config.name || chart._config.title || chart._id;
+    this._chartRegistry[chart._id] = { id: chart._id, name: name, instance: chart };
+  }
+
+  _unregisterChart(chart) {
+    delete this._chartRegistry[chart._id];
+  }
+
+  getRegisteredCharts() {
+    return Object.values(this._chartRegistry);
   }
 
   // ── Loading ──

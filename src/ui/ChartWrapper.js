@@ -137,6 +137,72 @@ var ChartWrapper = (function () {
     // Update legend on theme change
     ThemeManager.on(function () { _renderLegend(); });
 
+    // ── Data Limited By section ──
+    var limitLabel = document.createElement('div');
+    limitLabel.className = 'sl-color-label';
+    limitLabel.style.marginTop = '12px';
+    limitLabel.style.borderTop = '1px solid var(--sl-panel-border)';
+    limitLabel.style.paddingTop = '10px';
+    limitLabel.textContent = 'Data limited by';
+    body.appendChild(limitLabel);
+
+    var limitSelect = document.createElement('select');
+    limitSelect.className = 'sl-axis-select';
+    limitSelect.title = 'Data limited by';
+    limitSelect.style.width = '100%';
+    limitSelect.style.marginBottom = '4px';
+
+    function _refreshLimitDropdown() {
+      var curVal = chartInstance._config.dataLimitedBy || '';
+      limitSelect.innerHTML = '';
+      var noneOpt = document.createElement('option');
+      noneOpt.value = '';
+      noneOpt.textContent = 'None';
+      limitSelect.appendChild(noneOpt);
+
+      var charts = ds.getRegisteredCharts();
+      charts.forEach(function (entry) {
+        if (entry.id === chartInstance._id) return; // skip self
+        var opt = document.createElement('option');
+        opt.value = entry.id;
+        opt.textContent = entry.name;
+        if (entry.id === curVal) opt.selected = true;
+        limitSelect.appendChild(opt);
+      });
+    }
+
+    _refreshLimitDropdown();
+
+    // Refresh dropdown when it gets focus (in case new charts were added)
+    limitSelect.addEventListener('focus', _refreshLimitDropdown);
+
+    limitSelect.addEventListener('change', function () {
+      chartInstance.updateConfig({ dataLimitedBy: limitSelect.value || null });
+    });
+
+    body.appendChild(limitSelect);
+
+    // Status indicator
+    var limitStatus = document.createElement('div');
+    limitStatus.style.cssText = 'font-size:10px;color:var(--sl-text-muted);padding:2px 4px;';
+    body.appendChild(limitStatus);
+
+    // Update status on marking changes
+    chartInstance._mm.on('marking-changed', function () {
+      var limitBy = chartInstance._config.dataLimitedBy;
+      if (!limitBy) {
+        limitStatus.textContent = '';
+        return;
+      }
+      var entry = ds._chartRegistry[limitBy];
+      var sourceName = entry ? entry.name : limitBy;
+      if (chartInstance._limitSet && chartInstance._limitSet.size > 0) {
+        limitStatus.textContent = chartInstance._limitSet.size + ' rows from "' + sourceName + '"';
+      } else {
+        limitStatus.textContent = 'No selection in "' + sourceName + '"';
+      }
+    });
+
     sidebar.appendChild(body);
     return sidebar;
   }
@@ -187,6 +253,29 @@ var ChartWrapper = (function () {
       actions.appendChild(_makeSelect('Agg', cfg.aggregation || 'sum', aggOpts, function (val) {
         chartInstance.updateConfig({ aggregation: val });
       }));
+    }
+
+    // Data Limited By — header dropdown for charts WITHOUT a sidebar
+    if (ds && !supportsColorBy) {
+      var limitHeaderSelect = _makeSelect('Limit by', cfg.dataLimitedBy || '', [{ value: '', label: 'All data' }], function (val) {
+        chartInstance.updateConfig({ dataLimitedBy: val || null });
+      });
+      // Populate on focus
+      limitHeaderSelect.addEventListener('focus', function () {
+        var curVal = chartInstance._config.dataLimitedBy || '';
+        limitHeaderSelect.innerHTML = '';
+        var none = document.createElement('option');
+        none.value = ''; none.textContent = 'All data';
+        limitHeaderSelect.appendChild(none);
+        ds.getRegisteredCharts().forEach(function (entry) {
+          if (entry.id === chartInstance._id) return;
+          var o = document.createElement('option');
+          o.value = entry.id; o.textContent = entry.name;
+          if (entry.id === curVal) o.selected = true;
+          limitHeaderSelect.appendChild(o);
+        });
+      });
+      actions.appendChild(limitHeaderSelect);
     }
 
     // Clear marking button

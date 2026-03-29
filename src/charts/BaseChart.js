@@ -5,6 +5,7 @@ class BaseChart {
     this._ds = dataStore;
     this._config = Object.assign({}, config);
     this._mm = dataStore._markingManager;
+    this._limitSet = null; // Set of row indices from source chart, or null
 
     // Resolve container
     if (typeof selector === 'string') {
@@ -14,12 +15,20 @@ class BaseChart {
     }
     if (!this._container) throw new Error('SpottyFire: container not found: ' + selector);
 
+    // Register in chart registry
+    this._ds._registerChart(this);
+
     // Wrap in panel
     this._wrapper = ChartWrapper.wrap(this._container, this._config.title || '', this);
 
     // Listen to marking & filter changes
     var self = this;
-    this._onMarking = function (e) { if (e.source !== self._id) self._onMarkingChanged(e); };
+    this._onMarking = function (e) {
+      if (e.source !== self._id) {
+        self._handleDataLimiting(e);
+        self._onMarkingChanged(e);
+      }
+    };
     this._onFilter = function () { self.refresh(); };
     this._onTheme = function () { self.refresh(); };
 
@@ -35,7 +44,72 @@ class BaseChart {
     if (newConfig.title && this._wrapper) {
       this._wrapper.querySelector('.sl-panel-header span').textContent = newConfig.title;
     }
+    // If dataLimitedBy changed, re-evaluate limit set
+    if ('dataLimitedBy' in newConfig) {
+      if (!newConfig.dataLimitedBy) {
+        this._limitSet = null; // cleared
+      } else {
+        // Grab current marking state from source chart
+        var mm = this._mm;
+        if (mm.hasMarking()) {
+          this._limitSet = mm.getMarkedIndices();
+        } else {
+          this._limitSet = new Set(); // source has nothing marked → empty
+        }
+      }
+    }
     this.refresh();
+  }
+
+  // Handle data limiting: track marking from the source chart
+  _handleDataLimiting(e) {
+    var limitBy = this._config.dataLimitedBy;
+    if (!limitBy) return; // not limited by anything
+    if (e.source === limitBy) {
+      // Update limit set from this specific source
+      if (e.action === 'clear' || e.markedIndices.size === 0) {
+        this._limitSet = new Set(); // source cleared → empty
+      } else {
+        this._limitSet = new Set(e.markedIndices);
+      }
+    }
+    // If event is from a different chart, ignore for limiting purposes
+  }
+
+  // Get rows filtered by data limiting + global filters
+  _getLimitedRows() {
+    var rows = this._ds.getFilteredRows();
+    var limitBy = this._config.dataLimitedBy;
+
+    if (limitBy && this._limitSet !== null) {
+      if (this._limitSet.size === 0) {
+        return []; // source has nothing marked
+      }
+      var ls = this._limitSet;
+      rows = rows.filter(function (r) { return ls.has(r.__rowIndex); });
+    }
+
+    return rows;
+  }
+
+  // Check if chart is data-limited with empty result → render empty state
+  _renderEmptyIfLimited(layoutOverrides) {
+    var limitBy = this._config.dataLimitedBy;
+    if (!limitBy) return false;
+    if (this._limitSet === null) return false;
+    if (this._limitSet.size > 0) return false;
+
+    var entry = this._ds._chartRegistry[limitBy];
+    var sourceName = entry ? entry.name : 'source chart';
+    var theme = ThemeManager.getTheme();
+    var layout = ThemeManager.getPlotlyLayout(layoutOverrides || {});
+    layout.annotations = [{
+      text: 'Select data in "' + sourceName + '" to display',
+      xref: 'paper', yref: 'paper', x: 0.5, y: 0.5,
+      showarrow: false, font: { size: 13, color: theme.textMuted },
+    }];
+    Plotly.react(this._getPlotDiv(), [], layout, this._plotlyConfig());
+    return true;
   }
 
   refresh() {
@@ -59,6 +133,7 @@ class BaseChart {
   }
 
   destroy() {
+    this._ds._unregisterChart(this);
     this._mm.off('marking-changed', this._onMarking);
     this._ds.off('filter-changed', this._onFilter);
     ThemeManager.off(this._onTheme);

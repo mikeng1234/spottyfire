@@ -18,7 +18,7 @@ class DataTable extends BaseChart {
     if (cfg.showOnlyMarked && hasMarking) {
       rows = this._ds.getRows({ filtered: true, markedOnly: true });
     } else {
-      rows = this._ds.getFilteredRows();
+      rows = this._getLimitedRows();
     }
 
     var cols = cfg.columns || this._ds.getColumnNames();

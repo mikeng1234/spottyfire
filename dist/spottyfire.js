@@ -748,6 +748,21 @@ class DataStore {
     this._eventListeners = {};
     this._markingManager = new MarkingManager();
     this._filterEngine = new FilterEngine(this);
+    this._chartRegistry = {};   // chartId → { id, name, instance }
+  }
+
+  // ── Chart Registry ──
+  _registerChart(chart) {
+    var name = chart._config.name || chart._config.title || chart._id;
+    this._chartRegistry[chart._id] = { id: chart._id, name: name, instance: chart };
+  }
+
+  _unregisterChart(chart) {
+    delete this._chartRegistry[chart._id];
+  }
+
+  getRegisteredCharts() {
+    return Object.values(this._chartRegistry);
   }
 
   // ── Loading ──
@@ -946,6 +961,7 @@ class BaseChart {
     this._ds = dataStore;
     this._config = Object.assign({}, config);
     this._mm = dataStore._markingManager;
+    this._limitSet = null; // Set of row indices from source chart, or null
 
     // Resolve container
     if (typeof selector === 'string') {
@@ -955,12 +971,20 @@ class BaseChart {
     }
     if (!this._container) throw new Error('SpottyFire: container not found: ' + selector);
 
+    // Register in chart registry
+    this._ds._registerChart(this);
+
     // Wrap in panel
     this._wrapper = ChartWrapper.wrap(this._container, this._config.title || '', this);
 
     // Listen to marking & filter changes
     var self = this;
-    this._onMarking = function (e) { if (e.source !== self._id) self._onMarkingChanged(e); };
+    this._onMarking = function (e) {
+      if (e.source !== self._id) {
+        self._handleDataLimiting(e);
+        self._onMarkingChanged(e);
+      }
+    };
     this._onFilter = function () { self.refresh(); };
     this._onTheme = function () { self.refresh(); };
 
@@ -976,7 +1000,72 @@ class BaseChart {
     if (newConfig.title && this._wrapper) {
       this._wrapper.querySelector('.sl-panel-header span').textContent = newConfig.title;
     }
+    // If dataLimitedBy changed, re-evaluate limit set
+    if ('dataLimitedBy' in newConfig) {
+      if (!newConfig.dataLimitedBy) {
+        this._limitSet = null; // cleared
+      } else {
+        // Grab current marking state from source chart
+        var mm = this._mm;
+        if (mm.hasMarking()) {
+          this._limitSet = mm.getMarkedIndices();
+        } else {
+          this._limitSet = new Set(); // source has nothing marked → empty
+        }
+      }
+    }
     this.refresh();
+  }
+
+  // Handle data limiting: track marking from the source chart
+  _handleDataLimiting(e) {
+    var limitBy = this._config.dataLimitedBy;
+    if (!limitBy) return; // not limited by anything
+    if (e.source === limitBy) {
+      // Update limit set from this specific source
+      if (e.action === 'clear' || e.markedIndices.size === 0) {
+        this._limitSet = new Set(); // source cleared → empty
+      } else {
+        this._limitSet = new Set(e.markedIndices);
+      }
+    }
+    // If event is from a different chart, ignore for limiting purposes
+  }
+
+  // Get rows filtered by data limiting + global filters
+  _getLimitedRows() {
+    var rows = this._ds.getFilteredRows();
+    var limitBy = this._config.dataLimitedBy;
+
+    if (limitBy && this._limitSet !== null) {
+      if (this._limitSet.size === 0) {
+        return []; // source has nothing marked
+      }
+      var ls = this._limitSet;
+      rows = rows.filter(function (r) { return ls.has(r.__rowIndex); });
+    }
+
+    return rows;
+  }
+
+  // Check if chart is data-limited with empty result → render empty state
+  _renderEmptyIfLimited(layoutOverrides) {
+    var limitBy = this._config.dataLimitedBy;
+    if (!limitBy) return false;
+    if (this._limitSet === null) return false;
+    if (this._limitSet.size > 0) return false;
+
+    var entry = this._ds._chartRegistry[limitBy];
+    var sourceName = entry ? entry.name : 'source chart';
+    var theme = ThemeManager.getTheme();
+    var layout = ThemeManager.getPlotlyLayout(layoutOverrides || {});
+    layout.annotations = [{
+      text: 'Select data in "' + sourceName + '" to display',
+      xref: 'paper', yref: 'paper', x: 0.5, y: 0.5,
+      showarrow: false, font: { size: 13, color: theme.textMuted },
+    }];
+    Plotly.react(this._getPlotDiv(), [], layout, this._plotlyConfig());
+    return true;
   }
 
   refresh() {
@@ -1000,6 +1089,7 @@ class BaseChart {
   }
 
   destroy() {
+    this._ds._unregisterChart(this);
     this._mm.off('marking-changed', this._onMarking);
     this._ds.off('filter-changed', this._onFilter);
     ThemeManager.off(this._onTheme);
@@ -1021,9 +1111,10 @@ class BarChart extends BaseChart {
   }
 
   refresh() {
+    if (this._renderEmptyIfLimited()) return;
     var cfg = this._config;
     var theme = ThemeManager.getTheme();
-    var rows = this._ds.getFilteredRows();
+    var rows = this._getLimitedRows();
     var cat = cfg.category;
     var val = cfg.value;
     var agg = cfg.aggregation || 'sum';
@@ -1183,9 +1274,10 @@ class ScatterPlot extends BaseChart {
   }
 
   refresh() {
+    if (this._renderEmptyIfLimited()) return;
     var cfg = this._config;
     var theme = ThemeManager.getTheme();
-    var rows = this._ds.getFilteredRows();
+    var rows = this._getLimitedRows();
     var hasMarking = this._mm.hasMarking();
     var mm = this._mm;
     var colorBy = cfg.colorBy;
@@ -1359,9 +1451,10 @@ class LineChart extends BaseChart {
   }
 
   refresh() {
+    if (this._renderEmptyIfLimited()) return;
     var cfg = this._config;
     var theme = ThemeManager.getTheme();
-    var rows = this._ds.getFilteredRows();
+    var rows = this._getLimitedRows();
     var hasMarking = this._mm.hasMarking();
     var mm = this._mm;
 
@@ -1486,9 +1579,10 @@ class PieChart extends BaseChart {
   }
 
   refresh() {
+    if (this._renderEmptyIfLimited()) return;
     var cfg = this._config;
     var theme = ThemeManager.getTheme();
-    var rows = this._ds.getFilteredRows();
+    var rows = this._getLimitedRows();
     var hasMarking = this._mm.hasMarking();
     var mm = this._mm;
 
@@ -1607,9 +1701,10 @@ class HeatMap extends BaseChart {
   }
 
   refresh() {
+    if (this._renderEmptyIfLimited()) return;
     var cfg = this._config;
     var theme = ThemeManager.getTheme();
-    var rows = this._ds.getFilteredRows();
+    var rows = this._getLimitedRows();
     var mm = this._mm;
     var hasMarking = mm.hasMarking();
 
@@ -1782,7 +1877,7 @@ class DataTable extends BaseChart {
     if (cfg.showOnlyMarked && hasMarking) {
       rows = this._ds.getRows({ filtered: true, markedOnly: true });
     } else {
-      rows = this._ds.getFilteredRows();
+      rows = this._getLimitedRows();
     }
 
     var cols = cfg.columns || this._ds.getColumnNames();
@@ -2059,6 +2154,72 @@ var ChartWrapper = (function () {
     // Update legend on theme change
     ThemeManager.on(function () { _renderLegend(); });
 
+    // ── Data Limited By section ──
+    var limitLabel = document.createElement('div');
+    limitLabel.className = 'sl-color-label';
+    limitLabel.style.marginTop = '12px';
+    limitLabel.style.borderTop = '1px solid var(--sl-panel-border)';
+    limitLabel.style.paddingTop = '10px';
+    limitLabel.textContent = 'Data limited by';
+    body.appendChild(limitLabel);
+
+    var limitSelect = document.createElement('select');
+    limitSelect.className = 'sl-axis-select';
+    limitSelect.title = 'Data limited by';
+    limitSelect.style.width = '100%';
+    limitSelect.style.marginBottom = '4px';
+
+    function _refreshLimitDropdown() {
+      var curVal = chartInstance._config.dataLimitedBy || '';
+      limitSelect.innerHTML = '';
+      var noneOpt = document.createElement('option');
+      noneOpt.value = '';
+      noneOpt.textContent = 'None';
+      limitSelect.appendChild(noneOpt);
+
+      var charts = ds.getRegisteredCharts();
+      charts.forEach(function (entry) {
+        if (entry.id === chartInstance._id) return; // skip self
+        var opt = document.createElement('option');
+        opt.value = entry.id;
+        opt.textContent = entry.name;
+        if (entry.id === curVal) opt.selected = true;
+        limitSelect.appendChild(opt);
+      });
+    }
+
+    _refreshLimitDropdown();
+
+    // Refresh dropdown when it gets focus (in case new charts were added)
+    limitSelect.addEventListener('focus', _refreshLimitDropdown);
+
+    limitSelect.addEventListener('change', function () {
+      chartInstance.updateConfig({ dataLimitedBy: limitSelect.value || null });
+    });
+
+    body.appendChild(limitSelect);
+
+    // Status indicator
+    var limitStatus = document.createElement('div');
+    limitStatus.style.cssText = 'font-size:10px;color:var(--sl-text-muted);padding:2px 4px;';
+    body.appendChild(limitStatus);
+
+    // Update status on marking changes
+    chartInstance._mm.on('marking-changed', function () {
+      var limitBy = chartInstance._config.dataLimitedBy;
+      if (!limitBy) {
+        limitStatus.textContent = '';
+        return;
+      }
+      var entry = ds._chartRegistry[limitBy];
+      var sourceName = entry ? entry.name : limitBy;
+      if (chartInstance._limitSet && chartInstance._limitSet.size > 0) {
+        limitStatus.textContent = chartInstance._limitSet.size + ' rows from "' + sourceName + '"';
+      } else {
+        limitStatus.textContent = 'No selection in "' + sourceName + '"';
+      }
+    });
+
     sidebar.appendChild(body);
     return sidebar;
   }
@@ -2109,6 +2270,29 @@ var ChartWrapper = (function () {
       actions.appendChild(_makeSelect('Agg', cfg.aggregation || 'sum', aggOpts, function (val) {
         chartInstance.updateConfig({ aggregation: val });
       }));
+    }
+
+    // Data Limited By — header dropdown for charts WITHOUT a sidebar
+    if (ds && !supportsColorBy) {
+      var limitHeaderSelect = _makeSelect('Limit by', cfg.dataLimitedBy || '', [{ value: '', label: 'All data' }], function (val) {
+        chartInstance.updateConfig({ dataLimitedBy: val || null });
+      });
+      // Populate on focus
+      limitHeaderSelect.addEventListener('focus', function () {
+        var curVal = chartInstance._config.dataLimitedBy || '';
+        limitHeaderSelect.innerHTML = '';
+        var none = document.createElement('option');
+        none.value = ''; none.textContent = 'All data';
+        limitHeaderSelect.appendChild(none);
+        ds.getRegisteredCharts().forEach(function (entry) {
+          if (entry.id === chartInstance._id) return;
+          var o = document.createElement('option');
+          o.value = entry.id; o.textContent = entry.name;
+          if (entry.id === curVal) o.selected = true;
+          limitHeaderSelect.appendChild(o);
+        });
+      });
+      actions.appendChild(limitHeaderSelect);
     }
 
     // Clear marking button
