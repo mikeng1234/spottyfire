@@ -53,17 +53,21 @@ class BarChart extends BaseChart {
     // Get unique categories (respect sort order if set)
     // If category is "None" or empty, show single bar with total
     if (!cat || cat === 'None') {
-      cat = null;
-      var categories = ['All Data (' + rows.length + ' rows)'];
+      var _allLabel = 'All Data (' + rows.length + ' rows)';
+      // Create mapped rows with a temporary key (not mutating originals)
+      cat = '__sl_allcat';
+      rows = rows.map(function (r) {
+        var copy = Object.assign({}, r);
+        copy.__sl_allcat = _allLabel;
+        return copy;
+      });
+      var categories = [_allLabel];
       var catSet = {};
-      catSet[categories[0]] = true;
-      // Override: put all rows under one category
-      rows.forEach(function (r) { r.__tempCat = categories[0]; });
-      cat = '__tempCat';
+      catSet[_allLabel] = true;
     } else {
       var catSet = {};
       rows.forEach(function (r) { catSet[String(r[cat] || 'Unknown')] = true; });
-      var categories = cfg._sortOrder ? cfg._sortOrder.filter(function (c) { return catSet[c]; }) : Object.keys(catSet);
+      var categories = cfg._sortOrder ? cfg._sortOrder.filter(function (c) { return !!catSet[c]; }) : Object.keys(catSet);
     }
 
     if (colorBy && colorBy !== cat) {
@@ -236,7 +240,6 @@ class BarChart extends BaseChart {
     var self = this;
     var div = this._getPlotDiv();
     div.on('plotly_click', function (data) {
-      self._plotClickPending = false;
       if (!data || !data.points || !data.points[0]) return;
       var pt = data.points[0];
       var rowIndices = pt.customdata;

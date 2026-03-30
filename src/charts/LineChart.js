@@ -146,7 +146,6 @@ class LineChart extends BaseChart {
     var self = this;
     var div = this._getPlotDiv();
     div.on('plotly_click', function (data) {
-      self._plotClickPending = false;
       if (!data || !data.points || !data.points[0]) return;
       var idx = data.points[0].customdata;
       if (idx == null) return;

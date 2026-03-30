@@ -95,7 +95,7 @@ class PieChart extends BaseChart {
         var anyMarked = groupRows[k].some(function (ri) { return mm.isMarked(ri); });
         return anyMarked ? 0.05 : 0;
       });
-      trace.opacity = labels.map(function (k) {
+      trace.marker.opacity = labels.map(function (k) {
         var anyMarked = groupRows[k].some(function (ri) { return mm.isMarked(ri); });
         return anyMarked ? 1 : theme.unmarkedOpacity + 0.2;
       });
@@ -117,7 +117,6 @@ class PieChart extends BaseChart {
     var self = this;
     var div = this._getPlotDiv();
     div.on('plotly_click', function (data) {
-      self._plotClickPending = false;
       if (!data || !data.points || !data.points[0]) return;
       var pt = data.points[0];
       var rowIndices = pt.customdata;

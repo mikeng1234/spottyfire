@@ -734,7 +734,9 @@ class FilterEngine {
         var f = filters[col];
         var val = row[col];
         if (f.type === 'values') {
-          return f.selected.indexOf(val) >= 0;
+          // Use loose string comparison to handle numeric/string mismatch
+          var sVal = String(val);
+          return f.selected.some(function (s) { return String(s) === sVal; });
         } else if (f.type === 'range') {
           var n = parseFloat(val);
           if (isNaN(n)) return false;
@@ -1225,7 +1227,7 @@ class DataStore {
       min: vals.length ? vals[0] : null,
       max: vals.length ? vals[vals.length - 1] : null,
       mean: vals.length ? sum / vals.length : null,
-      median: vals.length ? vals[Math.floor(vals.length / 2)] : null,
+      median: vals.length ? (vals.length % 2 === 1 ? vals[Math.floor(vals.length / 2)] : (vals[vals.length / 2 - 1] + vals[vals.length / 2]) / 2) : null,
       count: this._rows.length,
       nulls: nulls,
     };
@@ -1333,7 +1335,7 @@ class DataStore {
   // ── Export ──
   exportCSV(opts) {
     var rows = this.getRows(opts);
-    var cols = this.getColumnNames();
+    var cols = this.getColumnNames().filter(function (c) { return c !== '__rowIndex'; });
     var lines = [cols.join(',')];
     rows.forEach(function (r) {
       lines.push(cols.map(function (c) {
@@ -1353,9 +1355,11 @@ class DataStore {
     var csv = this.exportCSV(opts);
     var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
+    var url = URL.createObjectURL(blob);
+    a.href = url;
     a.download = filename || 'export.csv';
     a.click();
+    URL.revokeObjectURL(url);
   }
 }
 // ─── BaseChart ──────────────────────────────────────────────
@@ -1743,6 +1747,9 @@ class BaseChart {
     this._ds.off('data-loaded', this._onDataLoaded);
     this._ds.off('format-changed', this._onFormat);
     ThemeManager.off(this._onTheme);
+    // Clean up document-level listeners
+    if (this._escHandler) document.removeEventListener('keydown', this._escHandler);
+    if (this._mouseupHandler) document.removeEventListener('mouseup', this._mouseupHandler);
     var div = this._getPlotDiv();
     if (div && typeof Plotly !== 'undefined') {
       try { Plotly.purge(div); } catch (e) {}
@@ -1770,16 +1777,6 @@ class BaseChart {
     });
   }
 
-  static _resizeAllLegacy() {
-    setTimeout(function () {
-      var plots = document.querySelectorAll('.sl-panel-body .js-plotly-plot');
-      plots.forEach(function (p) {
-        if (p.data) {
-          try { Plotly.Plots.resize(p); } catch (e) {}
-        }
-      });
-    }, 200);
-  }
 }
 // ─── BarChart ───────────────────────────────────────────────
 class BarChart extends BaseChart {
@@ -1836,17 +1833,21 @@ class BarChart extends BaseChart {
     // Get unique categories (respect sort order if set)
     // If category is "None" or empty, show single bar with total
     if (!cat || cat === 'None') {
-      cat = null;
-      var categories = ['All Data (' + rows.length + ' rows)'];
+      var _allLabel = 'All Data (' + rows.length + ' rows)';
+      // Create mapped rows with a temporary key (not mutating originals)
+      cat = '__sl_allcat';
+      rows = rows.map(function (r) {
+        var copy = Object.assign({}, r);
+        copy.__sl_allcat = _allLabel;
+        return copy;
+      });
+      var categories = [_allLabel];
       var catSet = {};
-      catSet[categories[0]] = true;
-      // Override: put all rows under one category
-      rows.forEach(function (r) { r.__tempCat = categories[0]; });
-      cat = '__tempCat';
+      catSet[_allLabel] = true;
     } else {
       var catSet = {};
       rows.forEach(function (r) { catSet[String(r[cat] || 'Unknown')] = true; });
-      var categories = cfg._sortOrder ? cfg._sortOrder.filter(function (c) { return catSet[c]; }) : Object.keys(catSet);
+      var categories = cfg._sortOrder ? cfg._sortOrder.filter(function (c) { return !!catSet[c]; }) : Object.keys(catSet);
     }
 
     if (colorBy && colorBy !== cat) {
@@ -2019,7 +2020,6 @@ class BarChart extends BaseChart {
     var self = this;
     var div = this._getPlotDiv();
     div.on('plotly_click', function (data) {
-      self._plotClickPending = false;
       if (!data || !data.points || !data.points[0]) return;
       var pt = data.points[0];
       var rowIndices = pt.customdata;
@@ -2201,7 +2201,6 @@ class ScatterPlot extends BaseChart {
     var div = this._getPlotDiv();
 
     div.on('plotly_selected', function (data) {
-      self._plotClickPending = false;
       if (!data || !data.points) { return; }
       var indices = data.points.map(function (p) { return p.customdata; }).filter(function (v) { return v != null; });
       if (indices.length === 0) return;
@@ -2209,7 +2208,6 @@ class ScatterPlot extends BaseChart {
     });
 
     div.on('plotly_click', function (data) {
-      self._plotClickPending = false;
       if (!data || !data.points || !data.points[0]) return;
       var idx = data.points[0].customdata;
       if (idx == null) return;
@@ -2375,7 +2373,6 @@ class LineChart extends BaseChart {
     var self = this;
     var div = this._getPlotDiv();
     div.on('plotly_click', function (data) {
-      self._plotClickPending = false;
       if (!data || !data.points || !data.points[0]) return;
       var idx = data.points[0].customdata;
       if (idx == null) return;
@@ -2487,7 +2484,7 @@ class PieChart extends BaseChart {
         var anyMarked = groupRows[k].some(function (ri) { return mm.isMarked(ri); });
         return anyMarked ? 0.05 : 0;
       });
-      trace.opacity = labels.map(function (k) {
+      trace.marker.opacity = labels.map(function (k) {
         var anyMarked = groupRows[k].some(function (ri) { return mm.isMarked(ri); });
         return anyMarked ? 1 : theme.unmarkedOpacity + 0.2;
       });
@@ -2509,7 +2506,6 @@ class PieChart extends BaseChart {
     var self = this;
     var div = this._getPlotDiv();
     div.on('plotly_click', function (data) {
-      self._plotClickPending = false;
       if (!data || !data.points || !data.points[0]) return;
       var pt = data.points[0];
       var rowIndices = pt.customdata;
@@ -2673,7 +2669,6 @@ class HeatMap extends BaseChart {
     var self = this;
     var div = this._getPlotDiv();
     div.on('plotly_click', function (data) {
-      self._plotClickPending = false;
       if (!data || !data.points || !data.points[0]) return;
       var pt = data.points[0];
       var xi = pt.pointIndex[1] != null ? pt.pointIndex[1] : pt.x;
@@ -2868,14 +2863,16 @@ class DataTable extends BaseChart {
       }
     });
 
-    document.addEventListener('mouseup', function () {
+    // Store handler to remove on next refresh
+    if (self._mouseupHandler) document.removeEventListener('mouseup', self._mouseupHandler);
+    self._mouseupHandler = function () {
       if (_dragging) {
         _dragging = false;
         self._isDragging = false;
-        // Do a final refresh to sync everything
         self.refresh();
       }
-    });
+    };
+    document.addEventListener('mouseup', self._mouseupHandler);
     div.appendChild(wrap);
 
     // Pager — always show
@@ -4480,12 +4477,13 @@ var ChartWrapper = (function () {
     container.innerHTML = '';
     container.appendChild(panel);
 
-    // Keyboard: Escape to clear marking
-    document.addEventListener('keydown', function (e) {
+    // Keyboard: Escape to clear marking (stored for cleanup)
+    chartInstance._escHandler = function (e) {
       if (e.key === 'Escape' && chartInstance && chartInstance._mm) {
         chartInstance._mm.clearMarking();
       }
-    });
+    };
+    document.addEventListener('keydown', chartInstance._escHandler);
 
     return panel;
   }

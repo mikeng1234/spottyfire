@@ -845,12 +845,13 @@ var ChartWrapper = (function () {
     container.innerHTML = '';
     container.appendChild(panel);
 
-    // Keyboard: Escape to clear marking
-    document.addEventListener('keydown', function (e) {
+    // Keyboard: Escape to clear marking (stored for cleanup)
+    chartInstance._escHandler = function (e) {
       if (e.key === 'Escape' && chartInstance && chartInstance._mm) {
         chartInstance._mm.clearMarking();
       }
-    });
+    };
+    document.addEventListener('keydown', chartInstance._escHandler);
 
     return panel;
   }

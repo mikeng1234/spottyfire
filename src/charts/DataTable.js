@@ -177,14 +177,16 @@ class DataTable extends BaseChart {
       }
     });
 
-    document.addEventListener('mouseup', function () {
+    // Store handler to remove on next refresh
+    if (self._mouseupHandler) document.removeEventListener('mouseup', self._mouseupHandler);
+    self._mouseupHandler = function () {
       if (_dragging) {
         _dragging = false;
         self._isDragging = false;
-        // Do a final refresh to sync everything
         self.refresh();
       }
-    });
+    };
+    document.addEventListener('mouseup', self._mouseupHandler);
     div.appendChild(wrap);
 
     // Pager — always show

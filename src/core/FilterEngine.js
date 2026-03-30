@@ -89,7 +89,9 @@ class FilterEngine {
         var f = filters[col];
         var val = row[col];
         if (f.type === 'values') {
-          return f.selected.indexOf(val) >= 0;
+          // Use loose string comparison to handle numeric/string mismatch
+          var sVal = String(val);
+          return f.selected.some(function (s) { return String(s) === sVal; });
         } else if (f.type === 'range') {
           var n = parseFloat(val);
           if (isNaN(n)) return false;

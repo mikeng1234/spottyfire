@@ -170,7 +170,7 @@ class DataStore {
       min: vals.length ? vals[0] : null,
       max: vals.length ? vals[vals.length - 1] : null,
       mean: vals.length ? sum / vals.length : null,
-      median: vals.length ? vals[Math.floor(vals.length / 2)] : null,
+      median: vals.length ? (vals.length % 2 === 1 ? vals[Math.floor(vals.length / 2)] : (vals[vals.length / 2 - 1] + vals[vals.length / 2]) / 2) : null,
       count: this._rows.length,
       nulls: nulls,
     };
@@ -278,7 +278,7 @@ class DataStore {
   // ── Export ──
   exportCSV(opts) {
     var rows = this.getRows(opts);
-    var cols = this.getColumnNames();
+    var cols = this.getColumnNames().filter(function (c) { return c !== '__rowIndex'; });
     var lines = [cols.join(',')];
     rows.forEach(function (r) {
       lines.push(cols.map(function (c) {
@@ -298,8 +298,10 @@ class DataStore {
     var csv = this.exportCSV(opts);
     var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
+    var url = URL.createObjectURL(blob);
+    a.href = url;
     a.download = filename || 'export.csv';
     a.click();
+    URL.revokeObjectURL(url);
   }
 }

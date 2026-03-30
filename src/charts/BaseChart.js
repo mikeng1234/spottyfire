@@ -383,6 +383,9 @@ class BaseChart {
     this._ds.off('data-loaded', this._onDataLoaded);
     this._ds.off('format-changed', this._onFormat);
     ThemeManager.off(this._onTheme);
+    // Clean up document-level listeners
+    if (this._escHandler) document.removeEventListener('keydown', this._escHandler);
+    if (this._mouseupHandler) document.removeEventListener('mouseup', this._mouseupHandler);
     var div = this._getPlotDiv();
     if (div && typeof Plotly !== 'undefined') {
       try { Plotly.purge(div); } catch (e) {}
@@ -410,14 +413,4 @@ class BaseChart {
     });
   }
 
-  static _resizeAllLegacy() {
-    setTimeout(function () {
-      var plots = document.querySelectorAll('.sl-panel-body .js-plotly-plot');
-      plots.forEach(function (p) {
-        if (p.data) {
-          try { Plotly.Plots.resize(p); } catch (e) {}
-        }
-      });
-    }, 200);
-  }
 }
