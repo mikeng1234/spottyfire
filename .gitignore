@@ -41,3 +41,12 @@ coverage/
 tmp/
 temp/
 *.tmp
+
+# Other project files (not part of SpottyFire library)
+core/
+css/
+lib/
+index.html
+students_data.csv
+SPOTFIRE_CAPABILITIES.md
+.claude/
