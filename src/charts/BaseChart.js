@@ -35,6 +35,11 @@ class BaseChart {
 
     this._mm.on('marking-changed', this._onMarking);
     this._ds.on('filter-changed', this._onFilter);
+
+    // Double-click empty area to clear marking (matches Plotly's reset behavior)
+    // Deferred: bind after first Plotly render since .on() requires Plotly initialization
+    this._dblClickBound = false;
+
     this._ds.on('format-changed', this._onFormat);
     ThemeManager.on(this._onTheme);
   }
@@ -183,6 +188,21 @@ class BaseChart {
     if (this._isNumericColumn(colName)) return false; // valid
     this._renderError('"' + colName + '" is not a numeric column.\nSelect a numeric column for ' + (axisLabel || 'this axis') + '.');
     return true; // had error
+  }
+
+  // Bind double-click to clear after Plotly has initialized the div
+  _bindPlotlyDeselect() {
+    if (this._dblClickBound) return;
+    var plotDiv = this._getPlotDiv();
+    if (plotDiv && plotDiv.on) {
+      var self = this;
+      plotDiv.on('plotly_doubleclick', function () {
+        if (self._mm.hasMarking()) {
+          self._mm.clearMarking(self._id);
+        }
+      });
+      this._dblClickBound = true;
+    }
   }
 
   // Apply column format to a Plotly axis layout object

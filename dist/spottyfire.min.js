@@ -1338,6 +1338,11 @@ class BaseChart {
 
     this._mm.on('marking-changed', this._onMarking);
     this._ds.on('filter-changed', this._onFilter);
+
+    // Double-click empty area to clear marking (matches Plotly's reset behavior)
+    // Deferred: bind after first Plotly render since .on() requires Plotly initialization
+    this._dblClickBound = false;
+
     this._ds.on('format-changed', this._onFormat);
     ThemeManager.on(this._onTheme);
   }
@@ -1486,6 +1491,21 @@ class BaseChart {
     if (this._isNumericColumn(colName)) return false; // valid
     this._renderError('"' + colName + '" is not a numeric column.\nSelect a numeric column for ' + (axisLabel || 'this axis') + '.');
     return true; // had error
+  }
+
+  // Bind double-click to clear after Plotly has initialized the div
+  _bindPlotlyDeselect() {
+    if (this._dblClickBound) return;
+    var plotDiv = this._getPlotDiv();
+    if (plotDiv && plotDiv.on) {
+      var self = this;
+      plotDiv.on('plotly_doubleclick', function () {
+        if (self._mm.hasMarking()) {
+          self._mm.clearMarking(self._id);
+        }
+      });
+      this._dblClickBound = true;
+    }
   }
 
   // Apply column format to a Plotly axis layout object
@@ -1754,9 +1774,11 @@ class BarChart extends BaseChart {
   }
 
   _bindEvents() {
+    this._bindPlotlyDeselect();
     var self = this;
     var div = this._getPlotDiv();
     div.on('plotly_click', function (data) {
+      self._plotClickPending = false;
       if (!data || !data.points || !data.points[0]) return;
       var pt = data.points[0];
       var rowIndices = pt.customdata;
@@ -1925,10 +1947,12 @@ class ScatterPlot extends BaseChart {
   _onMarkingChanged() { this.refresh(); }
 
   _bindEvents() {
+    this._bindPlotlyDeselect();
     var self = this;
     var div = this._getPlotDiv();
 
     div.on('plotly_selected', function (data) {
+      self._plotClickPending = false;
       if (!data || !data.points) { return; }
       var indices = data.points.map(function (p) { return p.customdata; }).filter(function (v) { return v != null; });
       if (indices.length === 0) return;
@@ -1936,6 +1960,7 @@ class ScatterPlot extends BaseChart {
     });
 
     div.on('plotly_click', function (data) {
+      self._plotClickPending = false;
       if (!data || !data.points || !data.points[0]) return;
       var idx = data.points[0].customdata;
       if (idx == null) return;
@@ -2070,9 +2095,11 @@ class LineChart extends BaseChart {
   _onMarkingChanged() { this.refresh(); }
 
   _bindEvents() {
+    this._bindPlotlyDeselect();
     var self = this;
     var div = this._getPlotDiv();
     div.on('plotly_click', function (data) {
+      self._plotClickPending = false;
       if (!data || !data.points || !data.points[0]) return;
       var idx = data.points[0].customdata;
       if (idx == null) return;
@@ -2197,9 +2224,11 @@ class PieChart extends BaseChart {
   _onMarkingChanged() { this.refresh(); }
 
   _bindEvents() {
+    this._bindPlotlyDeselect();
     var self = this;
     var div = this._getPlotDiv();
     div.on('plotly_click', function (data) {
+      self._plotClickPending = false;
       if (!data || !data.points || !data.points[0]) return;
       var pt = data.points[0];
       var rowIndices = pt.customdata;
@@ -2359,9 +2388,11 @@ class HeatMap extends BaseChart {
   _onMarkingChanged() { this.refresh(); }
 
   _bindEvents() {
+    this._bindPlotlyDeselect();
     var self = this;
     var div = this._getPlotDiv();
     div.on('plotly_click', function (data) {
+      self._plotClickPending = false;
       if (!data || !data.points || !data.points[0]) return;
       var pt = data.points[0];
       var xi = pt.pointIndex[1] != null ? pt.pointIndex[1] : pt.x;

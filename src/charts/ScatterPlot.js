@@ -151,10 +151,12 @@ class ScatterPlot extends BaseChart {
   _onMarkingChanged() { this.refresh(); }
 
   _bindEvents() {
+    this._bindPlotlyDeselect();
     var self = this;
     var div = this._getPlotDiv();
 
     div.on('plotly_selected', function (data) {
+      self._plotClickPending = false;
       if (!data || !data.points) { return; }
       var indices = data.points.map(function (p) { return p.customdata; }).filter(function (v) { return v != null; });
       if (indices.length === 0) return;
@@ -162,6 +164,7 @@ class ScatterPlot extends BaseChart {
     });
 
     div.on('plotly_click', function (data) {
+      self._plotClickPending = false;
       if (!data || !data.points || !data.points[0]) return;
       var idx = data.points[0].customdata;
       if (idx == null) return;
