@@ -25,6 +25,9 @@ Instead, please:
 - Cross-site scripting (XSS) through data injection
 - Prototype pollution via user-supplied data
 - Vulnerabilities in how CSV/JSON data is parsed and rendered
+- Formula engine injection (malicious expressions in `addCalculatedColumn`)
+- Context menu or menu bar action escalation
+- CSV/JSON upload handling vulnerabilities (drag-and-drop or file picker in `app.html`)
 - Any issue that could compromise a user's browser or data
 
 ## What Does Not Qualify

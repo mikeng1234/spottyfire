@@ -10,11 +10,29 @@ Thanks for your interest in contributing! Here's how to get started.
 
 ## Project Structure
 
-- `src/core/` — Data layer, marking engine, themes, filters, formulas
+- `src/core/` — Data layer, marking engine, themes, filters, formulas, undo/redo
+  - `DataStore.js` — Data loading, filtering, computed columns
+  - `MarkingEngine.js` — Cross-chart marking state
+  - `ThemeManager.js` — 8 built-in themes + custom theme API
+  - `FilterEngine.js` — Global filter logic
+  - `FormulaEngine.js` — 30+ formula functions
+  - `UndoManager.js` — Undo/redo stack for marking and filter operations
 - `src/charts/` — Chart components (each extends BaseChart)
-- `src/ui/` — UI components (filter panel, formula bar, toolbar)
+  - `BaseChart.js` — Shared chart logic, `resizeAll()`, theme/filter reactivity
+  - `BarChart.js`, `ScatterPlot.js`, `LineChart.js`, `PieChart.js`, `HeatMap.js`, `DataTable.js`
+- `src/ui/` — UI components
+  - `FilterPanel.js` — Collapsible filter sidebar (checkboxes, dual-range sliders, date pickers)
+  - `FormulaBar.js` — Formula input
+  - `Toolbar.js` — Export and theme toggle toolbar
+  - `MenuBar.js` — File/Edit/View menu bar with CSV/JSON upload, export, undo/redo
+  - `ContextMenu.js` — Right-click context menu (mark, filter, exclude, copy, sort, duplicate, create linked viz)
+  - `VizPanel.js` — Add new visualizations from sidebar tiles
+  - `ColumnPanel.js` — Column format manager (currency, percent, integer, scientific)
+  - `TileEngine.js` — Smart layout engine (2 per row, auto-fill)
+  - `ChartWrapper.js` — Chart container with type switcher, properties sidebar, cog settings
 - `examples/` — Demo HTML files
-- `dist/` — Bundled output
+- `app.html` — Standalone app with drag-and-drop CSV landing page
+- `dist/` — Bundled output (~233KB IIFE)
 
 ## How to Add a New Chart Type
 
@@ -30,6 +48,10 @@ Thanks for your interest in contributing! Here's how to get started.
 - No external dependencies beyond Plotly.js and PapaParse
 - Vanilla JS only (ES6 classes are fine)
 - Every chart must support cross-chart marking
+- Use `recalcLayout()` when adding/removing/resizing chart panels
+- Use `BaseChart.resizeAll()` to trigger responsive resize across all active charts
+- New actions that modify state should integrate with the undo system (`UndoManager`)
+- Context menu actions should be registered in `ContextMenu.js`
 - Test with the sample dataset before submitting
 
 ## Submitting Changes

@@ -5,7 +5,7 @@
 [![GitHub Stars](https://img.shields.io/github/stars/mikeng1234/spottyfire?style=social)](https://github.com/mikeng1234/spottyfire)
 [![GitHub Issues](https://img.shields.io/github/issues/mikeng1234/spottyfire)](https://github.com/mikeng1234/spottyfire/issues)
 
-**Drop-in interactive charts with cross-chart marking — like Spotfire, but open-source.**
+**A lightweight open-source data analytics tool — like Spotfire, but free and zero-dependency.**
 
 [Quick Start](#quick-start) | [Chart Types](#chart-types) | [Themes](#themes) | [API Reference](#api-reference) | [Contributing](CONTRIBUTING.md)
 
@@ -13,14 +13,35 @@
 
 ## Why SpottyFire?
 
-- **Linked Charts** — Click data in one chart, every other chart responds instantly
-- **6 Beautiful Themes** — Looks production-ready out of the box
-- **Single File** — One `<script>` tag. No build tools. No frameworks.
+- **Linked Charts** — Click data in one chart, every other chart responds instantly (click/shift/ctrl/lasso)
+- **8 Built-in Themes** — Looks production-ready out of the box, plus custom theme API
+- **Single File** — One `<script>` tag (~233KB). No build tools. No frameworks.
 - **Fast** — Handles 10k rows smoothly with scattergl and virtual scrolling
-- **Computed Columns** — Add formula-based columns like spreadsheets
-- **Filtering** — Global filters that affect all charts at once
+- **Formula Engine** — 30+ functions for computed columns (math, string, date, logic, window)
+- **Global Filters** — Checkboxes, dual-range sliders, and date pickers that affect all charts
+- **Undo/Redo** — Full Ctrl+Z / Ctrl+Y support for marking and filter operations
+- **Menu Bar** — File/Edit/View menus with CSV/JSON upload, export, and undo/redo
+- **Right-Click Context Menu** — Mark, filter, exclude, copy, sort, duplicate, create linked viz
+- **Standalone App** — `app.html` with drag-and-drop CSV landing page and auto-generated dashboards
+- **One-Liner Setup** — `SpottyFire.create()` auto-detects columns and generates best charts
 
 ## Quick Start
+
+### One-Liner (Recommended)
+
+```html
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="dist/spottyfire.js"></script>
+
+<script>
+  SpottyFire.create('data/sample-employees.csv');
+</script>
+```
+
+That's it. SpottyFire auto-detects column types, picks the best chart types, builds a full dashboard with filters, menu bar, and cross-chart marking.
+
+### Manual Setup
 
 ```html
 <!-- 1. Add dependencies -->
@@ -61,7 +82,11 @@
 </script>
 ```
 
-Click "Engineering" on the bar chart. The scatter plot highlights only Engineering employees. The table shows only those rows. That's it.
+Click "Engineering" on the bar chart. The scatter plot highlights only Engineering employees. The table shows only those rows.
+
+### Standalone App
+
+Open `app.html` in your browser for a drag-and-drop CSV landing page that auto-generates a full dashboard.
 
 ## Chart Types
 
@@ -78,7 +103,7 @@ All charts support: `title`, cross-chart marking, theme awareness, and filter re
 
 ## Themes
 
-6 built-in themes — set globally or switch at runtime:
+8 built-in themes — set globally or switch at runtime:
 
 ```javascript
 SpottyFire.setTheme('midnight');   // Default dark
@@ -87,6 +112,8 @@ SpottyFire.setTheme('forest');     // Earthy dark
 SpottyFire.setTheme('sunset');     // Warm dark
 SpottyFire.setTheme('corporate');  // Professional light
 SpottyFire.setTheme('neon');       // Vibrant dark
+SpottyFire.setTheme('obsidian');   // Deep dark
+SpottyFire.setTheme('porcelain'); // Soft light
 ```
 
 ### Custom Themes
@@ -110,8 +137,13 @@ SpottyFire.setTheme({
 | Click | Select/mark data points |
 | Shift + Click | Add to current marking |
 | Ctrl + Click | Toggle marking |
+| Double-Click | Clear all marking |
 | Lasso/Box Select | Select area (scatter plot) |
 | Escape | Clear all marking |
+| Ctrl + Z | Undo last action |
+| Ctrl + Y | Redo last action |
+| Right-Click | Open context menu (mark, filter, exclude, copy, sort, duplicate) |
+| F11 | Toggle fullscreen mode |
 
 ## API Reference
 
@@ -159,7 +191,7 @@ Column references use `[BracketNotation]`.
 ### UI Components
 
 ```javascript
-// Filter sidebar
+// Filter sidebar with checkboxes, dual-range sliders, and date pickers
 SpottyFire.FilterPanel('#sidebar', ds, {
   columns: ['Department', 'Region', 'Salary']
 });
@@ -173,6 +205,30 @@ SpottyFire.Toolbar('#toolbar', ds, {
   showThemeToggle: true,
   themes: ['midnight', 'arctic', 'sunset']
 });
+
+// Menu bar (File/Edit/View) with CSV/JSON upload, export, undo/redo
+SpottyFire.MenuBar('#menubar', ds);
+
+// Visualization panel — add new charts from sidebar tiles
+SpottyFire.VizPanel('#vizpanel', ds);
+
+// Column format manager (currency, percent, integer, scientific, etc.)
+SpottyFire.ColumnPanel('#colpanel', ds);
+```
+
+### One-Liner Dashboard
+
+```javascript
+// Auto-detect columns and generate best charts with full UI
+SpottyFire.create('data/sample.csv');
+SpottyFire.create('data/sample.csv', { theme: 'sunset' });
+```
+
+### Undo/Redo
+
+```javascript
+SpottyFire.undo();  // or Ctrl+Z
+SpottyFire.redo();  // or Ctrl+Y
 ```
 
 ## Examples
@@ -183,8 +239,11 @@ SpottyFire.Toolbar('#toolbar', ds, {
 | `02-full-dashboard.html` | All 6 chart types + filters + formulas |
 | `03-payroll-demo.html` | GenXcript payroll analytics scenario |
 | `04-embed-streamlit.py` | Streamlit embedding wrapper |
-| `05-themes-gallery.html` | All 6 themes side by side |
+| `05-themes-gallery.html` | All 8 themes side by side |
 | `06-custom-theme.html` | How to create a branded theme |
+| `07-premium-themes.html` | Obsidian and Porcelain theme showcase |
+| `08-correlation-sales.html` | Sales correlation analysis with linked charts |
+| `app.html` | Standalone app with drag-and-drop CSV landing page |
 
 ## Dependencies
 
@@ -197,7 +256,7 @@ Both loaded from CDN. No npm install required.
 
 ```bash
 bash build.sh
-# Outputs: dist/spottyfire.js (~79KB)
+# Outputs: dist/spottyfire.js (~233KB)
 ```
 
 No webpack, no rollup — just `cat` concatenation wrapped in an IIFE.
