@@ -100,13 +100,13 @@ class DataTable extends BaseChart {
       if (cfg.striped && ri % 2 === 1) row.classList.add('sl-striped');
       if (hasMarking && mm.isMarked(r.__rowIndex)) row.classList.add('sl-row-marked');
 
+      var ds = self._ds;
       cols.forEach(function (c) {
         var td = document.createElement('td');
         var v = r[c];
         if (v == null) td.textContent = '';
-        else if (typeof v === 'number') td.textContent = v.toLocaleString(undefined, { maximumFractionDigits: 2 });
         else if (typeof v === 'boolean') td.textContent = v ? 'Yes' : 'No';
-        else td.textContent = String(v);
+        else td.textContent = ds.formatValue(v, c);
         row.appendChild(td);
       });
 

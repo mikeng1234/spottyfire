@@ -8,13 +8,109 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script src="../dist/spottyfire.js"></script>
   <style>
+    * { box-sizing: border-box; }
+
+    /* ── Global layout: sidebar + main ── */
+    .app-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── Collapsible filter sidebar ── */
+    .filter-sidebar {
+      width: 240px;
+      min-width: 240px;
+      background: var(--sl-panel-bg);
+      border-right: 1px solid var(--sl-panel-border);
+      display: flex;
+      flex-direction: column;
+      transition: width 250ms ease, min-width 250ms ease;
+      overflow: hidden;
+      position: relative;
+      z-index: 20;
+    }
+    .filter-sidebar.collapsed {
+      width: 0;
+      min-width: 0;
+      border-right: none;
+    }
+    .filter-sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--sl-panel-border);
+      flex-shrink: 0;
+    }
+    .filter-sidebar-header span {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--sl-text-primary);
+      white-space: nowrap;
+    }
+    .filter-sidebar-header button {
+      background: none;
+      border: 1px solid var(--sl-panel-border);
+      border-radius: 6px;
+      color: var(--sl-text-muted);
+      cursor: pointer;
+      padding: 3px 8px;
+      font-size: 11px;
+      transition: all 200ms ease;
+      font-family: var(--sl-font);
+    }
+    .filter-sidebar-header button:hover {
+      color: var(--sl-text-primary);
+      border-color: var(--sl-accent);
+    }
+    .filter-sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0;
+    }
+    .collapsed .filter-sidebar-content,
+    .collapsed .filter-sidebar-header { display: none; }
+
+    /* Toggle button (visible when collapsed) */
+    .filter-toggle {
+      position: fixed;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 30;
+      background: var(--sl-panel-bg);
+      border: 1px solid var(--sl-panel-border);
+      border-left: none;
+      border-radius: 0 8px 8px 0;
+      color: var(--sl-text-muted);
+      cursor: pointer;
+      padding: 12px 6px;
+      font-size: 12px;
+      writing-mode: vertical-lr;
+      transform: translateY(-50%) rotate(180deg);
+      transition: all 200ms ease;
+      font-family: var(--sl-font);
+      letter-spacing: 1px;
+    }
+    .filter-toggle:hover {
+      color: var(--sl-text-primary);
+      border-color: var(--sl-accent);
+      background: var(--sl-accent);
+    }
+    .filter-toggle.hidden { display: none; }
+
+    /* ── Main content ── */
+    .main-content {
+      flex: 1;
+      min-width: 0;
+      padding: 24px;
+      overflow-y: auto;
+    }
     .grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 16px;
       max-width: 1300px;
-      margin: 0 auto;
-      padding: 24px;
     }
     .full { grid-column: 1 / -1; }
     .chart { min-height: 380px; }
@@ -29,33 +125,62 @@
   </style>
 </head>
 <body>
-  <div class="grid">
-    <!-- Header -->
-    <div class="full">
-      <h1>SpottyFire Debug Test</h1>
-      <p class="sub">
-        Test all chart types + cross-chart marking + filters + formulas.
-        Click bars/points/slices to mark. Shift+click to add. Escape to clear.
-      </p>
+  <!-- Toggle button (shown when sidebar collapsed) -->
+  <button class="filter-toggle hidden" id="filterToggle" onclick="toggleFilters()">FILTERS</button>
+
+  <div class="app-layout">
+    <!-- Collapsible filter sidebar -->
+    <aside class="filter-sidebar" id="filterSidebar">
+      <div class="filter-sidebar-header">
+        <span>Filters</span>
+        <button onclick="toggleFilters()" title="Collapse filters">&laquo; Hide</button>
+      </div>
+      <div class="filter-sidebar-content">
+        <div id="filters"></div>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <div class="main-content">
+      <div class="grid">
+        <!-- Header -->
+        <div class="full">
+          <h1>SpottyFire Debug Test</h1>
+          <p class="sub">
+            Test all chart types + cross-chart marking + filters + formulas.
+            Click bars/points/slices to mark. Shift+click to add. Escape to clear.
+          </p>
+        </div>
+
+        <!-- Toolbar + Formula -->
+        <div id="toolbar" class="full"></div>
+        <div id="formula" class="full"></div>
+
+        <!-- Charts -->
+        <div id="bar" class="chart"></div>
+        <div id="scatter" class="chart"></div>
+        <div id="pie" class="chart"></div>
+        <div id="line" class="chart"></div>
+        <div id="heatmap" class="chart full"></div>
+        <div id="table" class="table full"></div>
+
+        <!-- Status log -->
+        <div id="status" class="full">Loading...</div>
+      </div>
     </div>
-
-    <!-- Toolbar + Formula -->
-    <div id="toolbar" class="full"></div>
-    <div id="formula" class="full"></div>
-
-    <!-- Charts -->
-    <div id="bar" class="chart"></div>
-    <div id="scatter" class="chart"></div>
-    <div id="pie" class="chart"></div>
-    <div id="line" class="chart"></div>
-    <div id="heatmap" class="chart full"></div>
-    <div id="table" class="table full"></div>
-
-    <!-- Status log -->
-    <div id="status" class="full">Loading...</div>
   </div>
 
   <script>
+    // ── Sidebar toggle ──
+    function toggleFilters() {
+      var sidebar = document.getElementById('filterSidebar');
+      var toggle = document.getElementById('filterToggle');
+      var collapsed = sidebar.classList.toggle('collapsed');
+      toggle.classList.toggle('hidden', !collapsed);
+      // Resize Plotly charts after transition
+      setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 300);
+    }
+
     var log = function(msg) {
       var el = document.getElementById('status');
       el.textContent = msg;
@@ -80,6 +205,11 @@
         showThemeToggle: true,
       });
 
+      // Global filter panel (in sidebar)
+      SpottyFire.FilterPanel('#filters', ds, {
+        columns: ['Department', 'Region', 'Gender', 'IsActive', 'Salary', 'Age', 'PerformanceScore', 'Bracket']
+      });
+
       // Formula bar
       SpottyFire.FormulaBar('#formula', ds);
 
@@ -92,7 +222,7 @@
         title: 'Avg Salary by Department'
       });
 
-      // Scatter Plot — showOnlyMarked: only shows data selected in other charts
+      // Scatter Plot
       SpottyFire.ScatterPlot('#scatter', ds, {
         x: 'Age',
         y: 'Salary',

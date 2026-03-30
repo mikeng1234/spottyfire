@@ -4,10 +4,77 @@ class DataStore {
     this._rows = [];
     this._columns = [];
     this._calculatedCols = {};  // name → fn
+    this._calculatedFormulas = {};  // name → formula string (for undo/redo)
     this._eventListeners = {};
     this._markingManager = new MarkingManager();
     this._filterEngine = new FilterEngine(this);
     this._chartRegistry = {};   // chartId → { id, name, instance }
+    this._columnFormats = {};   // colName → { type, decimals, currency }
+  }
+
+  // ── Column Formatting ──
+  setColumnFormat(colName, formatSpec) {
+    this._columnFormats[colName] = formatSpec;
+    this._emitEvent('format-changed', { column: colName, format: formatSpec });
+  }
+
+  getColumnFormat(colName) {
+    return this._columnFormats[colName] || { type: 'auto' };
+  }
+
+  formatValue(value, colName) {
+    if (value == null || value === '') return '';
+    var fmt = this._columnFormats[colName];
+    if (!fmt || fmt.type === 'auto') {
+      // Default: use toLocaleString for numbers
+      if (typeof value === 'number') return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+      return String(value);
+    }
+    if (typeof value !== 'number') {
+      value = parseFloat(value);
+      if (isNaN(value)) return String(value);
+    }
+    var d = fmt.decimals != null ? fmt.decimals : 2;
+    switch (fmt.type) {
+      case 'integer':
+        return Math.round(value).toLocaleString();
+      case 'decimal':
+        return value.toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d });
+      case 'currency':
+        var symbols = { USD: '$', PHP: '\u20B1', EUR: '\u20AC', GBP: '\u00A3', JPY: '\u00A5', KRW: '\u20A9', CNY: '\u00A5', INR: '\u20B9', BRL: 'R$', MXN: 'MX$' };
+        var sym = symbols[fmt.currency] || fmt.currency || '$';
+        return sym + value.toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d });
+      case 'percent':
+        return value.toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d }) + '%';
+      case 'scientific':
+        return value.toExponential(d);
+      default:
+        return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    }
+  }
+
+  // Returns Plotly axis format properties for a column
+  getPlotlyAxisFormat(colName) {
+    var fmt = this._columnFormats[colName];
+    if (!fmt || fmt.type === 'auto') return {};
+    var d = fmt.decimals != null ? fmt.decimals : 2;
+    var dStr = '.' + d;
+    switch (fmt.type) {
+      case 'integer':
+        return { tickformat: ',d' };
+      case 'decimal':
+        return { tickformat: ',' + dStr + 'f' };
+      case 'currency':
+        var symbols = { USD: '$', PHP: '\u20B1', EUR: '\u20AC', GBP: '\u00A3', JPY: '\u00A5', KRW: '\u20A9', CNY: '\u00A5', INR: '\u20B9', BRL: 'R$', MXN: 'MX$' };
+        var sym = symbols[fmt.currency] || fmt.currency || '$';
+        return { tickprefix: sym, tickformat: ',' + dStr + 'f' };
+      case 'percent':
+        return { ticksuffix: '%', tickformat: ',' + dStr + 'f' };
+      case 'scientific':
+        return { tickformat: dStr + 'e' };
+      default:
+        return {};
+    }
   }
 
   // ── Chart Registry ──
@@ -37,6 +104,7 @@ class DataStore {
           self._detectColumns();
           self._applyCalculatedColumns();
           self._emitEvent('data-loaded', { rowCount: self._rows.length });
+          UndoManager.clear();
           resolve(self);
         },
         error: function (err) { reject(err); }
@@ -56,6 +124,7 @@ class DataStore {
     this._detectColumns();
     this._applyCalculatedColumns();
     this._emitEvent('data-loaded', { rowCount: this._rows.length });
+    UndoManager.clear();
     return this;
   }
 
@@ -141,14 +210,35 @@ class DataStore {
       var sample = this._rows.length > 0 ? this._rows[0][name] : null;
       this._columns.push({ name: name, type: typeof sample === 'number' ? 'number' : 'string' });
     }
+    this._calculatedFormulas[name] = formula;
     this._emitEvent('column-added', { name: name });
+
+    var self = this;
+    UndoManager.push({
+      type: 'calculatedColumn',
+      label: 'Add column "' + name + '"',
+      undo: function () { self.removeCalculatedColumn(name); },
+      redo: function () { self.addCalculatedColumn(name, formula); },
+    });
   }
 
   removeCalculatedColumn(name) {
+    var formulaStr = this._calculatedFormulas[name] || null;
     delete this._calculatedCols[name];
+    delete this._calculatedFormulas[name];
     this._rows.forEach(function (r) { delete r[name]; });
     this._columns = this._columns.filter(function (c) { return c.name !== name; });
     this._emitEvent('column-removed', { name: name });
+
+    if (formulaStr) {
+      var self = this;
+      UndoManager.push({
+        type: 'calculatedColumn',
+        label: 'Remove column "' + name + '"',
+        undo: function () { self.addCalculatedColumn(name, formulaStr); },
+        redo: function () { self.removeCalculatedColumn(name); },
+      });
+    }
   }
 
   _applyCalculatedColumns() {

@@ -192,6 +192,7 @@ const ThemeManager = (function () {
   }
 
   function setTheme(themeOrName) {
+    var prevName = _current.name;
     if (typeof themeOrName === 'string') {
       if (!THEMES[themeOrName]) throw new Error('Unknown theme: ' + themeOrName);
       _current = THEMES[themeOrName];
@@ -200,6 +201,16 @@ const ThemeManager = (function () {
     }
     _applyCSS(_current);
     _emit();
+
+    var newName = _current.name;
+    if (typeof UndoManager !== 'undefined') {
+      UndoManager.push({
+        type: 'theme',
+        label: 'Theme: ' + newName,
+        undo: function () { setTheme(prevName); },
+        redo: function () { setTheme(newName); },
+      });
+    }
   }
 
   function getTheme() { return Object.assign({}, _current); }
@@ -302,15 +313,44 @@ const ThemeManager = (function () {
         '.sl-filter-section label{display:block;font-size:12px;font-weight:600;color:var(--sl-text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;}' +
         '.sl-filter-check{display:flex;align-items:center;gap:6px;padding:3px 0;cursor:pointer;font-size:13px;color:var(--sl-text-primary);}' +
         '.sl-filter-check input{accent-color:var(--sl-accent);}' +
-        '.sl-filter-range{width:100%;accent-color:var(--sl-accent);}' +
+        '.sl-filter-range{width:100%;accent-color:var(--sl-accent);display:none;}' +
+        '.sl-dualrange{position:relative;height:20px;cursor:pointer;user-select:none;touch-action:none;}' +
+        '.sl-dualrange::before{content:"";position:absolute;top:8px;left:0;right:0;height:4px;background:var(--sl-panel-border);border-radius:2px;}' +
+        '.sl-dualrange-fill{position:absolute;top:8px;height:4px;background:var(--sl-accent);border-radius:2px;pointer-events:none;}' +
+        '.sl-dualrange-thumb{position:absolute;top:4px;width:12px;height:12px;background:var(--sl-accent);border:2px solid var(--sl-panel-bg);border-radius:50%;transform:translateX(-50%);cursor:grab;transition:box-shadow 150ms ease,transform 150ms ease;z-index:2;box-shadow:0 1px 4px rgba(0,0,0,0.3);}' +
+        '.sl-dualrange-thumb:hover{transform:translateX(-50%) scale(1.3);box-shadow:0 0 0 4px color-mix(in srgb,var(--sl-accent) 25%,transparent);}' +
+        '.sl-dualrange-thumb:active{cursor:grabbing;transform:translateX(-50%) scale(1.2);}' +
+        '.sl-filter-num{flex:1;width:0;background:var(--sl-panel-bg);border:1px solid var(--sl-panel-border);border-radius:6px;color:var(--sl-text-primary);padding:4px 6px;font-size:11px;font-family:var(--sl-font);outline:none;transition:border-color var(--sl-transition) ease;-moz-appearance:textfield;}' +
+        '.sl-filter-num:focus{border-color:var(--sl-accent);}' +
+        '.sl-filter-num::-webkit-inner-spin-button,.sl-filter-num::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}' +
         '.sl-toolbar{display:flex;align-items:center;gap:8px;padding:8px 0;}' +
         '.sl-toolbar button,.sl-toolbar select{background:var(--sl-panel-bg);border:1px solid var(--sl-panel-border);border-radius:8px;color:var(--sl-text-primary);padding:6px 14px;font-size:12px;cursor:pointer;transition:all var(--sl-transition) ease;font-family:var(--sl-font);}' +
-        '.sl-toolbar button:hover,.sl-toolbar select:hover{border-color:var(--sl-accent);}' +
+        '.sl-toolbar button:hover:not(:disabled),.sl-toolbar select:hover{border-color:var(--sl-accent);}' +
+        '.sl-toolbar button:disabled{opacity:0.3;cursor:default;}' +
         '.sl-formula-bar{display:flex;gap:8px;align-items:center;padding:8px 0;}' +
         '.sl-formula-input{flex:1;background:var(--sl-panel-bg);border:1px solid var(--sl-panel-border);border-radius:8px;color:var(--sl-text-primary);padding:8px 12px;font-size:13px;font-family:monospace;outline:none;transition:border-color var(--sl-transition) ease;}' +
         '.sl-formula-input:focus{border-color:var(--sl-accent);}' +
         '.sl-formula-name{background:var(--sl-panel-bg);border:1px solid var(--sl-panel-border);border-radius:8px;color:var(--sl-text-primary);padding:8px 12px;font-size:13px;width:140px;outline:none;transition:border-color var(--sl-transition) ease;}' +
-        '.sl-formula-name:focus{border-color:var(--sl-accent);}';
+        '.sl-formula-name:focus{border-color:var(--sl-accent);}' +
+        '.sl-column-panel{background:var(--sl-panel-bg);border:1px solid var(--sl-panel-border);border-radius:12px;box-shadow:var(--sl-panel-shadow);padding:12px;overflow-y:auto;font-size:13px;color:var(--sl-text-primary);}' +
+        '.sl-colpanel-title{font-size:14px;font-weight:700;margin-bottom:12px;color:var(--sl-text-primary);}' +
+        '.sl-colpanel-item{padding:8px 0;border-bottom:1px solid var(--sl-panel-border);}' +
+        '.sl-colpanel-item:last-child{border-bottom:none;}' +
+        '.sl-colpanel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}' +
+        '.sl-colpanel-name{font-size:12px;font-weight:600;color:var(--sl-text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
+        '.sl-colpanel-badge{font-size:9px;font-weight:700;color:#fff;padding:1px 5px;border-radius:3px;letter-spacing:0.5px;flex-shrink:0;}' +
+        '.sl-colpanel-format-row{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px;}' +
+        '.sl-colpanel-select{background:var(--sl-panel-bg);border:1px solid var(--sl-panel-border);border-radius:5px;color:var(--sl-text-secondary);padding:2px 4px;font-size:10px;cursor:pointer;font-family:var(--sl-font);outline:none;transition:border-color var(--sl-transition) ease;}' +
+        '.sl-colpanel-select:hover,.sl-colpanel-select:focus{border-color:var(--sl-accent);color:var(--sl-text-primary);}' +
+        '.sl-colpanel-preview{font-size:11px;color:var(--sl-accent);font-family:monospace;padding:2px 0;}' +
+        '.sl-dataset-panel{padding:4px 0;}' +
+        '.sl-dataset-title{font-size:14px;font-weight:700;padding:8px 12px;color:var(--sl-text-primary);}' +
+        '.sl-dataset-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;cursor:pointer;border-left:3px solid transparent;transition:all var(--sl-transition) ease;}' +
+        '.sl-dataset-item:hover{background:rgba(128,128,128,0.07);}' +
+        '.sl-dataset-active{border-left-color:var(--sl-accent);background:rgba(128,128,128,0.05);}' +
+        '.sl-dataset-active .sl-dataset-name{color:var(--sl-accent);font-weight:600;}' +
+        '.sl-dataset-name{font-size:12px;color:var(--sl-text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
+        '.sl-dataset-badge{font-size:10px;color:var(--sl-text-muted);flex-shrink:0;}';
       document.head.appendChild(s);
     }
   }
@@ -330,6 +370,105 @@ const ThemeManager = (function () {
     _themes: THEMES,
   };
 })();
+// ─── UndoManager ────────────────────────────────────────────
+var UndoManager = (function () {
+  var MAX_DEPTH = 50;
+  var _undoStack = [];
+  var _redoStack = [];
+  var _listeners = [];
+  var _suppressPush = false;
+  var _batch = null;
+
+  function _emit() {
+    _listeners.forEach(function (fn) { fn(); });
+  }
+
+  function push(cmd) {
+    if (_suppressPush) return;
+    if (_batch) {
+      // Batching: keep first undo, overwrite redo with latest
+      if (!_batch.firstUndo) {
+        _batch.firstUndo = cmd.undo;
+        _batch.label = cmd.label;
+        _batch.type = cmd.type;
+      }
+      _batch.lastRedo = cmd.redo;
+      return;
+    }
+    _undoStack.push(cmd);
+    if (_undoStack.length > MAX_DEPTH) _undoStack.shift();
+    _redoStack = [];
+    _emit();
+  }
+
+  function undo() {
+    if (_undoStack.length === 0) return;
+    var cmd = _undoStack.pop();
+    _suppressPush = true;
+    try { cmd.undo(); } finally { _suppressPush = false; }
+    _redoStack.push(cmd);
+    _emit();
+  }
+
+  function redo() {
+    if (_redoStack.length === 0) return;
+    var cmd = _redoStack.pop();
+    _suppressPush = true;
+    try { cmd.redo(); } finally { _suppressPush = false; }
+    _undoStack.push(cmd);
+    _emit();
+  }
+
+  function beginBatch() {
+    _batch = { firstUndo: null, lastRedo: null, label: '', type: '' };
+  }
+
+  function endBatch() {
+    if (!_batch) return;
+    if (_batch.firstUndo && _batch.lastRedo) {
+      _undoStack.push({
+        type: _batch.type,
+        label: _batch.label,
+        undo: _batch.firstUndo,
+        redo: _batch.lastRedo,
+      });
+      if (_undoStack.length > MAX_DEPTH) _undoStack.shift();
+      _redoStack = [];
+      _emit();
+    }
+    _batch = null;
+  }
+
+  function canUndo() { return _undoStack.length > 0; }
+  function canRedo() { return _redoStack.length > 0; }
+  function clear() { _undoStack = []; _redoStack = []; _emit(); }
+
+  function on(event, cb) { if (event === 'changed') _listeners.push(cb); }
+  function off(event, cb) {
+    if (event === 'changed') {
+      var i = _listeners.indexOf(cb);
+      if (i >= 0) _listeners.splice(i, 1);
+    }
+  }
+
+  // Keyboard shortcuts
+  if (typeof document !== 'undefined') {
+    document.addEventListener('keydown', function (e) {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+        if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+        else if (e.key === 'z' && e.shiftKey) { e.preventDefault(); redo(); }
+        else if (e.key === 'y') { e.preventDefault(); redo(); }
+      }
+    });
+  }
+
+  return {
+    push: push, undo: undo, redo: redo,
+    canUndo: canUndo, canRedo: canRedo, clear: clear,
+    beginBatch: beginBatch, endBatch: endBatch,
+    on: on, off: off,
+  };
+})();
 // ─── MarkingManager ─────────────────────────────────────────
 class MarkingManager {
   constructor() {
@@ -338,30 +477,91 @@ class MarkingManager {
   }
 
   setMarking(rowIndices, source) {
+    var prevMarked = new Set(this._marked);
     this._marked = new Set(rowIndices);
     this._emit({ markedIndices: this._marked, source: source, action: 'set' });
+
+    var self = this;
+    var newMarked = new Set(this._marked);
+    UndoManager.push({
+      type: 'marking',
+      label: 'Select ' + newMarked.size + ' rows',
+      undo: function () {
+        self._marked = prevMarked;
+        self._emit({ markedIndices: self._marked, source: 'undo', action: 'set' });
+      },
+      redo: function () {
+        self._marked = newMarked;
+        self._emit({ markedIndices: self._marked, source: 'redo', action: 'set' });
+      },
+    });
   }
 
   addToMarking(rowIndices, source) {
+    var prevMarked = new Set(this._marked);
     rowIndices.forEach(i => this._marked.add(i));
     this._emit({ markedIndices: this._marked, source: source, action: 'add' });
+
+    var self = this;
+    var newMarked = new Set(this._marked);
+    UndoManager.push({
+      type: 'marking',
+      label: 'Add to selection (' + newMarked.size + ' rows)',
+      undo: function () {
+        self._marked = prevMarked;
+        self._emit({ markedIndices: self._marked, source: 'undo', action: 'set' });
+      },
+      redo: function () {
+        self._marked = newMarked;
+        self._emit({ markedIndices: self._marked, source: 'redo', action: 'set' });
+      },
+    });
   }
 
   toggleMarking(rowIndices, source) {
+    var prevMarked = new Set(this._marked);
     rowIndices.forEach(i => {
       if (this._marked.has(i)) this._marked.delete(i);
       else this._marked.add(i);
     });
-    if (this._marked.size === 0) {
-      this._emit({ markedIndices: this._marked, source: source, action: 'clear' });
-    } else {
-      this._emit({ markedIndices: this._marked, source: source, action: 'toggle' });
-    }
+    var action = this._marked.size === 0 ? 'clear' : 'toggle';
+    this._emit({ markedIndices: this._marked, source: source, action: action });
+
+    var self = this;
+    var newMarked = new Set(this._marked);
+    UndoManager.push({
+      type: 'marking',
+      label: 'Toggle selection',
+      undo: function () {
+        self._marked = prevMarked;
+        self._emit({ markedIndices: self._marked, source: 'undo', action: 'set' });
+      },
+      redo: function () {
+        self._marked = newMarked;
+        self._emit({ markedIndices: self._marked, source: 'redo', action: 'set' });
+      },
+    });
   }
 
   clearMarking(source) {
+    var prevMarked = new Set(this._marked);
+    if (prevMarked.size === 0) return; // nothing to clear, skip undo entry
     this._marked = new Set();
     this._emit({ markedIndices: this._marked, source: source || null, action: 'clear' });
+
+    var self = this;
+    UndoManager.push({
+      type: 'marking',
+      label: 'Clear selection',
+      undo: function () {
+        self._marked = prevMarked;
+        self._emit({ markedIndices: self._marked, source: 'undo', action: 'set' });
+      },
+      redo: function () {
+        self._marked = new Set();
+        self._emit({ markedIndices: self._marked, source: 'undo', action: 'clear' });
+      },
+    });
   }
 
   getMarkedIndices() { return new Set(this._marked); }
@@ -380,7 +580,6 @@ class MarkingManager {
   }
 
   _emit(detail) {
-    // Batch via rAF
     if (this._raf) cancelAnimationFrame(this._raf);
     this._raf = requestAnimationFrame(() => {
       this._listeners.forEach(fn => fn(detail));
@@ -391,22 +590,80 @@ class MarkingManager {
 class FilterEngine {
   constructor(dataStore) {
     this._ds = dataStore;
-    this._filters = {};  // colName → { type:'values', selected:[...] } or { type:'range', min, max }
+    this._filters = {};
   }
 
   setFilter(colName, spec) {
+    var prevSpec = this._filters[colName]
+      ? JSON.parse(JSON.stringify(this._filters[colName]))
+      : undefined;
+    var newSpec = JSON.parse(JSON.stringify(spec));
+    var col = colName;
+
     this._filters[colName] = spec;
     this._ds._emitEvent('filter-changed', { column: colName, filter: spec });
+
+    var self = this;
+    UndoManager.push({
+      type: 'filter',
+      label: 'Filter ' + col,
+      undo: function () {
+        if (prevSpec === undefined) { delete self._filters[col]; }
+        else { self._filters[col] = JSON.parse(JSON.stringify(prevSpec)); }
+        self._ds._emitEvent('filter-changed', { column: col, filter: prevSpec || null });
+      },
+      redo: function () {
+        self._filters[col] = JSON.parse(JSON.stringify(newSpec));
+        self._ds._emitEvent('filter-changed', { column: col, filter: newSpec });
+      },
+    });
   }
 
   clearFilter(colName) {
+    var prevSpec = this._filters[colName]
+      ? JSON.parse(JSON.stringify(this._filters[colName]))
+      : undefined;
+    if (prevSpec === undefined) return; // nothing to clear
+
     delete this._filters[colName];
     this._ds._emitEvent('filter-changed', { column: colName, filter: null });
+
+    var self = this;
+    var col = colName;
+    UndoManager.push({
+      type: 'filter',
+      label: 'Clear filter on ' + col,
+      undo: function () {
+        self._filters[col] = JSON.parse(JSON.stringify(prevSpec));
+        self._ds._emitEvent('filter-changed', { column: col, filter: prevSpec });
+      },
+      redo: function () {
+        delete self._filters[col];
+        self._ds._emitEvent('filter-changed', { column: col, filter: null });
+      },
+    });
   }
 
   clearAll() {
+    var prevFilters = JSON.parse(JSON.stringify(this._filters));
+    if (Object.keys(prevFilters).length === 0) return; // nothing to clear
+
     this._filters = {};
     this._ds._emitEvent('filter-changed', { column: null, filter: null });
+
+    var self = this;
+    UndoManager.push({
+      type: 'filter',
+      label: 'Clear all filters',
+      undo: function () {
+        self._filters = JSON.parse(JSON.stringify(prevFilters));
+        self._ds._emitEvent('filter-changed', { column: null, filter: null });
+      },
+      redo: function () {
+        self._filters = {};
+        self._ds._emitEvent('filter-changed', { column: null, filter: null });
+      },
+    });
   }
 
   getActive() { return Object.assign({}, this._filters); }
@@ -745,10 +1002,77 @@ class DataStore {
     this._rows = [];
     this._columns = [];
     this._calculatedCols = {};  // name → fn
+    this._calculatedFormulas = {};  // name → formula string (for undo/redo)
     this._eventListeners = {};
     this._markingManager = new MarkingManager();
     this._filterEngine = new FilterEngine(this);
     this._chartRegistry = {};   // chartId → { id, name, instance }
+    this._columnFormats = {};   // colName → { type, decimals, currency }
+  }
+
+  // ── Column Formatting ──
+  setColumnFormat(colName, formatSpec) {
+    this._columnFormats[colName] = formatSpec;
+    this._emitEvent('format-changed', { column: colName, format: formatSpec });
+  }
+
+  getColumnFormat(colName) {
+    return this._columnFormats[colName] || { type: 'auto' };
+  }
+
+  formatValue(value, colName) {
+    if (value == null || value === '') return '';
+    var fmt = this._columnFormats[colName];
+    if (!fmt || fmt.type === 'auto') {
+      // Default: use toLocaleString for numbers
+      if (typeof value === 'number') return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+      return String(value);
+    }
+    if (typeof value !== 'number') {
+      value = parseFloat(value);
+      if (isNaN(value)) return String(value);
+    }
+    var d = fmt.decimals != null ? fmt.decimals : 2;
+    switch (fmt.type) {
+      case 'integer':
+        return Math.round(value).toLocaleString();
+      case 'decimal':
+        return value.toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d });
+      case 'currency':
+        var symbols = { USD: '$', PHP: '\u20B1', EUR: '\u20AC', GBP: '\u00A3', JPY: '\u00A5', KRW: '\u20A9', CNY: '\u00A5', INR: '\u20B9', BRL: 'R$', MXN: 'MX$' };
+        var sym = symbols[fmt.currency] || fmt.currency || '$';
+        return sym + value.toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d });
+      case 'percent':
+        return value.toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d }) + '%';
+      case 'scientific':
+        return value.toExponential(d);
+      default:
+        return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    }
+  }
+
+  // Returns Plotly axis format properties for a column
+  getPlotlyAxisFormat(colName) {
+    var fmt = this._columnFormats[colName];
+    if (!fmt || fmt.type === 'auto') return {};
+    var d = fmt.decimals != null ? fmt.decimals : 2;
+    var dStr = '.' + d;
+    switch (fmt.type) {
+      case 'integer':
+        return { tickformat: ',d' };
+      case 'decimal':
+        return { tickformat: ',' + dStr + 'f' };
+      case 'currency':
+        var symbols = { USD: '$', PHP: '\u20B1', EUR: '\u20AC', GBP: '\u00A3', JPY: '\u00A5', KRW: '\u20A9', CNY: '\u00A5', INR: '\u20B9', BRL: 'R$', MXN: 'MX$' };
+        var sym = symbols[fmt.currency] || fmt.currency || '$';
+        return { tickprefix: sym, tickformat: ',' + dStr + 'f' };
+      case 'percent':
+        return { ticksuffix: '%', tickformat: ',' + dStr + 'f' };
+      case 'scientific':
+        return { tickformat: dStr + 'e' };
+      default:
+        return {};
+    }
   }
 
   // ── Chart Registry ──
@@ -778,6 +1102,7 @@ class DataStore {
           self._detectColumns();
           self._applyCalculatedColumns();
           self._emitEvent('data-loaded', { rowCount: self._rows.length });
+          UndoManager.clear();
           resolve(self);
         },
         error: function (err) { reject(err); }
@@ -797,6 +1122,7 @@ class DataStore {
     this._detectColumns();
     this._applyCalculatedColumns();
     this._emitEvent('data-loaded', { rowCount: this._rows.length });
+    UndoManager.clear();
     return this;
   }
 
@@ -882,14 +1208,35 @@ class DataStore {
       var sample = this._rows.length > 0 ? this._rows[0][name] : null;
       this._columns.push({ name: name, type: typeof sample === 'number' ? 'number' : 'string' });
     }
+    this._calculatedFormulas[name] = formula;
     this._emitEvent('column-added', { name: name });
+
+    var self = this;
+    UndoManager.push({
+      type: 'calculatedColumn',
+      label: 'Add column "' + name + '"',
+      undo: function () { self.removeCalculatedColumn(name); },
+      redo: function () { self.addCalculatedColumn(name, formula); },
+    });
   }
 
   removeCalculatedColumn(name) {
+    var formulaStr = this._calculatedFormulas[name] || null;
     delete this._calculatedCols[name];
+    delete this._calculatedFormulas[name];
     this._rows.forEach(function (r) { delete r[name]; });
     this._columns = this._columns.filter(function (c) { return c.name !== name; });
     this._emitEvent('column-removed', { name: name });
+
+    if (formulaStr) {
+      var self = this;
+      UndoManager.push({
+        type: 'calculatedColumn',
+        label: 'Remove column "' + name + '"',
+        undo: function () { self.addCalculatedColumn(name, formulaStr); },
+        redo: function () { self.removeCalculatedColumn(name); },
+      });
+    }
   }
 
   _applyCalculatedColumns() {
@@ -987,15 +1334,25 @@ class BaseChart {
     };
     this._onFilter = function () { self.refresh(); };
     this._onTheme = function () { self.refresh(); };
+    this._onFormat = function () { self.refresh(); };
 
     this._mm.on('marking-changed', this._onMarking);
     this._ds.on('filter-changed', this._onFilter);
+    this._ds.on('format-changed', this._onFormat);
     ThemeManager.on(this._onTheme);
   }
 
   getConfig() { return Object.assign({}, this._config); }
 
   updateConfig(newConfig) {
+    // Capture previous values for undo
+    var prevConfig = {};
+    for (var key in newConfig) {
+      if (newConfig.hasOwnProperty(key)) {
+        prevConfig[key] = this._config[key];
+      }
+    }
+
     Object.assign(this._config, newConfig);
     if (newConfig.title && this._wrapper) {
       this._wrapper.querySelector('.sl-panel-header span').textContent = newConfig.title;
@@ -1003,18 +1360,42 @@ class BaseChart {
     // If dataLimitedBy changed, re-evaluate limit set
     if ('dataLimitedBy' in newConfig) {
       if (!newConfig.dataLimitedBy) {
-        this._limitSet = null; // cleared
+        this._limitSet = null;
       } else {
-        // Grab current marking state from source chart
         var mm = this._mm;
         if (mm.hasMarking()) {
           this._limitSet = mm.getMarkedIndices();
         } else {
-          this._limitSet = new Set(); // source has nothing marked → empty
+          this._limitSet = new Set();
         }
       }
     }
     this.refresh();
+
+    // Push undo command
+    var self = this;
+    var newCfg = JSON.parse(JSON.stringify(newConfig));
+    var prevCfg = JSON.parse(JSON.stringify(prevConfig));
+    UndoManager.push({
+      type: 'chartConfig',
+      label: 'Update ' + (self._config.title || self._id),
+      undo: function () {
+        if (!self._container) return;
+        Object.assign(self._config, prevCfg);
+        if ('dataLimitedBy' in prevCfg) {
+          self._limitSet = prevCfg.dataLimitedBy ? new Set() : null;
+        }
+        self.refresh();
+      },
+      redo: function () {
+        if (!self._container) return;
+        Object.assign(self._config, newCfg);
+        if ('dataLimitedBy' in newCfg) {
+          self._limitSet = newCfg.dataLimitedBy ? new Set() : null;
+        }
+        self.refresh();
+      },
+    });
   }
 
   // Handle data limiting: track marking from the source chart
@@ -1107,6 +1488,15 @@ class BaseChart {
     return true; // had error
   }
 
+  // Apply column format to a Plotly axis layout object
+  _applyAxisFormat(axisLayout, colName) {
+    var fmt = this._ds.getPlotlyAxisFormat(colName);
+    if (fmt.tickformat) axisLayout.tickformat = fmt.tickformat;
+    if (fmt.tickprefix) axisLayout.tickprefix = fmt.tickprefix;
+    if (fmt.ticksuffix) axisLayout.ticksuffix = fmt.ticksuffix;
+    return axisLayout;
+  }
+
   refresh() {
     // Override in subclass
   }
@@ -1131,6 +1521,7 @@ class BaseChart {
     this._ds._unregisterChart(this);
     this._mm.off('marking-changed', this._onMarking);
     this._ds.off('filter-changed', this._onFilter);
+    this._ds.off('format-changed', this._onFormat);
     ThemeManager.off(this._onTheme);
     var div = this._getPlotDiv();
     if (div && typeof Plotly !== 'undefined') {
@@ -1176,76 +1567,149 @@ class BarChart extends BaseChart {
       return;
     }
 
-    // showOnlyMarked: filter to marked rows
     if (cfg.showOnlyMarked && hasMarking) {
       rows = rows.filter(function (r) { return mm.isMarked(r.__rowIndex); });
-      hasMarking = false; // no need to split — already filtered
+      hasMarking = false;
     }
 
-    // Aggregate
-    var groups = {};
-    var groupRows = {};
-    rows.forEach(function (r) {
-      var key = String(r[cat] || 'Unknown');
-      if (!groups[key]) { groups[key] = []; groupRows[key] = []; }
-      groups[key].push(+r[val] || 0);
-      groupRows[key].push(r.__rowIndex);
-    });
+    var traces = [];
 
-    var categories = Object.keys(groups);
-    var values = categories.map(function (k) {
-      var arr = groups[k];
+    function _agg(arr) {
+      if (arr.length === 0) return 0;
       if (agg === 'sum') return arr.reduce(function (a, b) { return a + b; }, 0);
       if (agg === 'avg') return arr.reduce(function (a, b) { return a + b; }, 0) / arr.length;
       if (agg === 'count') return arr.length;
       if (agg === 'min') return Math.min.apply(null, arr);
       if (agg === 'max') return Math.max.apply(null, arr);
       return arr.reduce(function (a, b) { return a + b; }, 0);
-    });
+    }
 
-    var traces = [];
-    var mm = this._mm;
+    // Get unique categories
+    var catSet = {};
+    rows.forEach(function (r) { catSet[String(r[cat] || 'Unknown')] = true; });
+    var categories = Object.keys(catSet);
 
-    if (hasMarking) {
-      // Split into marked / unmarked
-      var markedVals = [];
-      var unmarkedVals = [];
-      categories.forEach(function (k, i) {
-        var markedCount = 0, markedSum = 0;
-        var unmarkedCount = 0, unmarkedSum = 0;
-        groupRows[k].forEach(function (ri, j) {
-          if (mm.isMarked(ri)) { markedCount++; markedSum += groups[k][j]; }
-          else { unmarkedCount++; unmarkedSum += groups[k][j]; }
-        });
-        var mv = agg === 'count' ? markedCount : agg === 'avg' ? (markedCount ? markedSum / markedCount : 0) : markedSum;
-        var uv = agg === 'count' ? unmarkedCount : agg === 'avg' ? (unmarkedCount ? unmarkedSum / unmarkedCount : 0) : unmarkedSum;
-        markedVals.push(markedCount > 0 ? mv : 0);
-        unmarkedVals.push(unmarkedCount > 0 ? uv : 0);
+    if (colorBy && colorBy !== cat) {
+      // ── Stacked bar: one trace per colorBy value ──
+      var colorValues = {};
+      rows.forEach(function (r) { colorValues[String(r[colorBy] || 'Other')] = true; });
+      var colorKeys = Object.keys(colorValues);
+
+      // Build a grid: [colorKey][category] → { vals:[], indices:[] }
+      var grid = {};
+      colorKeys.forEach(function (ck) {
+        grid[ck] = {};
+        categories.forEach(function (c) { grid[ck][c] = { vals: [], indices: [] }; });
+      });
+      rows.forEach(function (r) {
+        var c = String(r[cat] || 'Unknown');
+        var ck = String(r[colorBy] || 'Other');
+        grid[ck][c].vals.push(+r[val] || 0);
+        grid[ck][c].indices.push(r.__rowIndex);
       });
 
-      var markedTrace = {
-        name: 'Selected',
+      colorKeys.forEach(function (ck, ci) {
+        var baseColor = theme.palette[ci % theme.palette.length];
+        var aggVals = categories.map(function (c) { return _agg(grid[ck][c].vals); });
+        var rowIndices = categories.map(function (c) { return grid[ck][c].indices; });
+
+        if (hasMarking) {
+          // Split each segment into marked/unmarked
+          var markedVals = [];
+          var unmarkedVals = [];
+          categories.forEach(function (c) {
+            var cell = grid[ck][c];
+            var mSum = 0, mCount = 0, uSum = 0, uCount = 0;
+            cell.indices.forEach(function (ri, j) {
+              if (mm.isMarked(ri)) { mCount++; mSum += cell.vals[j]; }
+              else { uCount++; uSum += cell.vals[j]; }
+            });
+            markedVals.push(_agg(mCount > 0 ? (agg === 'count' ? new Array(mCount) : [mSum]) : []));
+            unmarkedVals.push(_agg(uCount > 0 ? (agg === 'count' ? new Array(uCount) : [uSum]) : []));
+          });
+
+          // Marked trace
+          var mTrace = { type: 'bar', name: ck, legendgroup: ck, showlegend: true,
+            marker: { color: baseColor, opacity: 1, line: { width: 0 } },
+            customdata: rowIndices, hoverinfo: 'x+y+name' };
+          var uTrace = { type: 'bar', name: ck, legendgroup: ck, showlegend: false,
+            marker: { color: theme.unmarkedColor || '#888', opacity: theme.unmarkedOpacity, line: { width: 0 } },
+            customdata: rowIndices, hoverinfo: 'x+y+name' };
+
+          if (orientation === 'horizontal') {
+            mTrace.y = categories; mTrace.x = markedVals; mTrace.orientation = 'h';
+            uTrace.y = categories; uTrace.x = unmarkedVals; uTrace.orientation = 'h';
+          } else {
+            mTrace.x = categories; mTrace.y = markedVals;
+            uTrace.x = categories; uTrace.y = unmarkedVals;
+          }
+          traces.push(mTrace);
+          traces.push(uTrace);
+        } else {
+          var trace = { type: 'bar', name: ck,
+            marker: { color: baseColor, opacity: 0.9, line: { width: 0 } },
+            customdata: rowIndices, hoverinfo: 'x+y+name' };
+
+          if (orientation === 'horizontal') {
+            trace.y = categories; trace.x = aggVals; trace.orientation = 'h';
+          } else {
+            trace.x = categories; trace.y = aggVals;
+          }
+          traces.push(trace);
+        }
+      });
+    } else if (hasMarking) {
+      // ── No colorBy, but has marking → split into marked/unmarked ──
+      var groupRows = {};
+      var groups = {};
+      rows.forEach(function (r) {
+        var key = String(r[cat] || 'Unknown');
+        if (!groups[key]) { groups[key] = []; groupRows[key] = []; }
+        groups[key].push(+r[val] || 0);
+        groupRows[key].push(r.__rowIndex);
+      });
+
+      var markedVals = [];
+      var unmarkedVals = [];
+      categories.forEach(function (k) {
+        var mCount = 0, mSum = 0, uCount = 0, uSum = 0;
+        groupRows[k].forEach(function (ri, j) {
+          if (mm.isMarked(ri)) { mCount++; mSum += groups[k][j]; }
+          else { uCount++; uSum += groups[k][j]; }
+        });
+        var mv = agg === 'count' ? mCount : agg === 'avg' ? (mCount ? mSum / mCount : 0) : mSum;
+        var uv = agg === 'count' ? uCount : agg === 'avg' ? (uCount ? uSum / uCount : 0) : uSum;
+        markedVals.push(mCount > 0 ? mv : 0);
+        unmarkedVals.push(uCount > 0 ? uv : 0);
+      });
+
+      var markedTrace = { type: 'bar', name: 'Selected',
         marker: { color: theme.marking, opacity: 1, line: { width: 0 } },
-        customdata: categories.map(function (k) { return groupRows[k]; }),
-        hoverinfo: 'x+y',
-      };
-      var unmarkedTrace = {
-        name: 'Other',
+        customdata: categories.map(function (k) { return groupRows[k]; }), hoverinfo: 'x+y' };
+      var unmarkedTrace = { type: 'bar', name: 'Other',
         marker: { color: theme.unmarkedColor || '#888', opacity: theme.unmarkedOpacity },
-        customdata: categories.map(function (k) { return groupRows[k]; }),
-        hoverinfo: 'x+y',
-      };
+        customdata: categories.map(function (k) { return groupRows[k]; }), hoverinfo: 'x+y' };
 
       if (orientation === 'horizontal') {
-        markedTrace.y = categories; markedTrace.x = markedVals; markedTrace.type = 'bar'; markedTrace.orientation = 'h';
-        unmarkedTrace.y = categories; unmarkedTrace.x = unmarkedVals; unmarkedTrace.type = 'bar'; unmarkedTrace.orientation = 'h';
+        markedTrace.y = categories; markedTrace.x = markedVals; markedTrace.orientation = 'h';
+        unmarkedTrace.y = categories; unmarkedTrace.x = unmarkedVals; unmarkedTrace.orientation = 'h';
       } else {
-        markedTrace.x = categories; markedTrace.y = markedVals; markedTrace.type = 'bar';
-        unmarkedTrace.x = categories; unmarkedTrace.y = unmarkedVals; unmarkedTrace.type = 'bar';
+        markedTrace.x = categories; markedTrace.y = markedVals;
+        unmarkedTrace.x = categories; unmarkedTrace.y = unmarkedVals;
       }
       traces = [markedTrace, unmarkedTrace];
     } else {
-      // No marking — use palette colors
+      // ── No colorBy, no marking → simple colored bars ──
+      var groupRows = {};
+      var groups = {};
+      rows.forEach(function (r) {
+        var key = String(r[cat] || 'Unknown');
+        if (!groups[key]) { groups[key] = []; groupRows[key] = []; }
+        groups[key].push(+r[val] || 0);
+        groupRows[key].push(r.__rowIndex);
+      });
+
+      var values = categories.map(function (k) { return _agg(groups[k]); });
       var colors = categories.map(function (_, i) { return theme.palette[i % theme.palette.length]; });
       var trace = {
         type: 'bar',
@@ -1253,9 +1717,7 @@ class BarChart extends BaseChart {
         customdata: categories.map(function (k) { return groupRows[k]; }),
         hoverinfo: 'x+y',
       };
-      if (cfg.barRadius) {
-        // Plotly doesn't natively support border-radius, but we add rounded look via marker line
-      }
+
       if (orientation === 'horizontal') {
         trace.y = categories; trace.x = values; trace.orientation = 'h';
       } else {
@@ -1263,7 +1725,9 @@ class BarChart extends BaseChart {
       }
 
       if (cfg.showValues) {
-        trace.text = values.map(function (v) { return typeof v === 'number' ? v.toLocaleString(undefined, { maximumFractionDigits: 1 }) : v; });
+        var ds = this._ds;
+        var valCol = cfg.value;
+        trace.text = values.map(function (v) { return ds.formatValue(v, valCol); });
         trace.textposition = 'outside';
         trace.textfont = { size: 11, color: theme.textSecondary };
       }
@@ -1271,15 +1735,18 @@ class BarChart extends BaseChart {
     }
 
     var layout = ThemeManager.getPlotlyLayout({
-      barmode: hasMarking ? 'stack' : 'group',
-      showlegend: hasMarking,
+      barmode: (colorBy || hasMarking) ? 'stack' : 'group',
+      showlegend: !!(colorBy || hasMarking),
     });
+    // Apply column format to value axis
     if (orientation === 'horizontal') {
+      this._applyAxisFormat(layout.xaxis, val);
       layout.yaxis.automargin = true;
+    } else {
+      this._applyAxisFormat(layout.yaxis, val);
     }
 
-    var div = this._getPlotDiv();
-    Plotly.react(div, traces, layout, this._plotlyConfig());
+    Plotly.react(this._getPlotDiv(), traces, layout, this._plotlyConfig());
   }
 
   _onMarkingChanged() {
@@ -1448,6 +1915,8 @@ class ScatterPlot extends BaseChart {
       yaxis: { title: { text: cfg.y } },
       dragmode: 'select',
     });
+    this._applyAxisFormat(layout.xaxis, cfg.x);
+    this._applyAxisFormat(layout.yaxis, cfg.y);
 
     var div = this._getPlotDiv();
     Plotly.react(div, traces, layout, this._plotlyConfig());
@@ -1592,6 +2061,8 @@ class LineChart extends BaseChart {
       xaxis: { title: { text: xCol } },
       yaxis: { title: { text: yCols.join(', ') } },
     });
+    this._applyAxisFormat(layout.xaxis, xCol);
+    this._applyAxisFormat(layout.yaxis, yCols[0]);
 
     Plotly.react(this._getPlotDiv(), traces, layout, this._plotlyConfig());
   }
@@ -1777,6 +2248,7 @@ class HeatMap extends BaseChart {
       hasMarking = false;
     }
 
+    var ds = this._ds;
     var xCol = cfg.x;
     var yCol = cfg.y;
     var valCol = cfg.value;
@@ -1823,7 +2295,7 @@ class HeatMap extends BaseChart {
           else if (agg === 'max') val = Math.max.apply(null, arr);
         }
         row.push(val);
-        txtRow.push(val ? val.toFixed(1) : '');
+        txtRow.push(val ? ds.formatValue(val, valCol) : '');
         cdRow.push(gridRows[key] || []);
       });
       z.push(row);
@@ -1842,12 +2314,12 @@ class HeatMap extends BaseChart {
       z: z,
       colorscale: colorscale,
       showscale: true,
-      hovertemplate: xCol + ': %{x}<br>' + yCol + ': %{y}<br>' + valCol + ': %{z:.1f}<extra></extra>',
+      hovertemplate: xCol + ': %{x}<br>' + yCol + ': %{y}<br>' + valCol + ': %{text}<extra></extra>',
       customdata: customdata,
     };
 
+    trace.text = textVals; // always set for hover
     if (cfg.showValues) {
-      trace.text = textVals;
       trace.texttemplate = '%{text}';
       trace.textfont = { size: 11, color: theme.textPrimary };
     }
@@ -2007,13 +2479,13 @@ class DataTable extends BaseChart {
       if (cfg.striped && ri % 2 === 1) row.classList.add('sl-striped');
       if (hasMarking && mm.isMarked(r.__rowIndex)) row.classList.add('sl-row-marked');
 
+      var ds = self._ds;
       cols.forEach(function (c) {
         var td = document.createElement('td');
         var v = r[c];
         if (v == null) td.textContent = '';
-        else if (typeof v === 'number') td.textContent = v.toLocaleString(undefined, { maximumFractionDigits: 2 });
         else if (typeof v === 'boolean') td.textContent = v ? 'Yes' : 'No';
-        else td.textContent = String(v);
+        else td.textContent = ds.formatValue(v, c);
         row.appendChild(td);
       });
 
@@ -2078,6 +2550,31 @@ var ChartWrapper = (function () {
       if (opt.value === currentVal) el.selected = true;
       select.appendChild(el);
     });
+    select.addEventListener('change', function () { onChange(select.value); });
+    return select;
+  }
+
+  // Helper: axis dropdown that refreshes options from chart's current dataset columns on focus
+  function _makeAxisSelect(label, getVal, chartInst, onChange) {
+    var select = document.createElement('select');
+    select.title = label;
+    select.className = 'sl-axis-select';
+
+    function _populate() {
+      var curVal = getVal();
+      select.innerHTML = '';
+      var cols = chartInst._ds.getColumnNames();
+      cols.forEach(function (c) {
+        var el = document.createElement('option');
+        el.value = c;
+        el.textContent = c;
+        if (c === curVal) el.selected = true;
+        select.appendChild(el);
+      });
+    }
+
+    _populate();
+    select.addEventListener('focus', _populate);
     select.addEventListener('change', function () { onChange(select.value); });
     return select;
   }
@@ -2320,8 +2817,8 @@ var ChartWrapper = (function () {
       }));
     }
 
-    // Data Limited By — header dropdown for charts WITHOUT a sidebar
-    if (ds && !supportsColorBy) {
+    // Data Limited By — header dropdown for ALL chart types
+    if (ds) {
       var limitHeaderSelect = _makeSelect('Limit by', cfg.dataLimitedBy || '', [{ value: '', label: 'All data' }], function (val) {
         chartInstance.updateConfig({ dataLimitedBy: val || null });
       });
@@ -2365,20 +2862,23 @@ var ChartWrapper = (function () {
       yBar.className = 'sl-y-axis-bar';
 
       if (isScatter) {
-        yBar.appendChild(_makeSelect('Y axis', cfg.y, colOpts, function (val) {
+        yBar.appendChild(_makeAxisSelect('Y axis', function () { return chartInstance._config.y; }, chartInstance, function (val) {
           chartInstance.updateConfig({ y: val });
         }));
-      } else if (isBar || isPie) {
-        yBar.appendChild(_makeSelect('Value', cfg.value, colOpts, function (val) {
+      } else if (isPie) {
+        yBar.appendChild(_makeAxisSelect('Size by', function () { return chartInstance._config.value; }, chartInstance, function (val) {
+          chartInstance.updateConfig({ value: val });
+        }));
+      } else if (isBar) {
+        yBar.appendChild(_makeAxisSelect('Value', function () { return chartInstance._config.value; }, chartInstance, function (val) {
           chartInstance.updateConfig({ value: val });
         }));
       } else if (isLine) {
-        var curY = Array.isArray(cfg.y) ? cfg.y[0] : cfg.y;
-        yBar.appendChild(_makeSelect('Y axis', curY, colOpts, function (val) {
+        yBar.appendChild(_makeAxisSelect('Y axis', function () { var y = chartInstance._config.y; return Array.isArray(y) ? y[0] : y; }, chartInstance, function (val) {
           chartInstance.updateConfig({ y: [val] });
         }));
       } else if (isHeat) {
-        yBar.appendChild(_makeSelect('Y axis', cfg.y, colOpts, function (val) {
+        yBar.appendChild(_makeAxisSelect('Y axis', function () { return chartInstance._config.y; }, chartInstance, function (val) {
           chartInstance.updateConfig({ y: val });
         }));
       }
@@ -2398,22 +2898,26 @@ var ChartWrapper = (function () {
       xBar.className = 'sl-x-axis-bar';
 
       if (isScatter || isLine) {
-        xBar.appendChild(_makeSelect('X axis', cfg.x, colOpts, function (val) {
+        xBar.appendChild(_makeAxisSelect('X axis', function () { return chartInstance._config.x; }, chartInstance, function (val) {
           chartInstance.updateConfig({ x: val });
         }));
-      } else if (isBar || isPie) {
-        xBar.appendChild(_makeSelect('Category', cfg.category, colOpts, function (val) {
+      } else if (isPie) {
+        xBar.appendChild(_makeAxisSelect('Slice by', function () { return chartInstance._config.category; }, chartInstance, function (val) {
+          chartInstance.updateConfig({ category: val });
+        }));
+      } else if (isBar) {
+        xBar.appendChild(_makeAxisSelect('Category', function () { return chartInstance._config.category; }, chartInstance, function (val) {
           chartInstance.updateConfig({ category: val });
         }));
       } else if (isHeat) {
-        xBar.appendChild(_makeSelect('X axis', cfg.x, colOpts, function (val) {
+        xBar.appendChild(_makeAxisSelect('X axis', function () { return chartInstance._config.x; }, chartInstance, function (val) {
           chartInstance.updateConfig({ x: val });
         }));
         var lbl = document.createElement('span');
         lbl.className = 'sl-axis-label';
         lbl.textContent = 'Value:';
         xBar.appendChild(lbl);
-        xBar.appendChild(_makeSelect('Value', cfg.value, colOpts, function (val) {
+        xBar.appendChild(_makeAxisSelect('Value', function () { return chartInstance._config.value; }, chartInstance, function (val) {
           chartInstance.updateConfig({ value: val });
         }));
       }
@@ -2460,8 +2964,7 @@ class FilterPanel {
     if (!this._container) throw new Error('FilterPanel: container not found');
 
     var self = this;
-    this._onFilter = function () { self.render(); };
-    this._ds.on('filter-changed', this._onFilter);
+    // Only re-render on data load, NOT on filter changes (prevents slider destruction mid-drag)
     this._ds.on('data-loaded', function () { self.render(); });
     this.render();
   }
@@ -2472,11 +2975,6 @@ class FilterPanel {
     var container = this._container;
     container.innerHTML = '';
     container.className = (container.className.indexOf('sl-filter-panel') < 0 ? container.className + ' ' : '') + 'sl-filter-panel';
-
-    var title = document.createElement('div');
-    title.style.cssText = 'font-size:16px;font-weight:700;margin-bottom:16px;color:var(--sl-text-primary);';
-    title.textContent = 'Filters';
-    container.appendChild(title);
 
     var activeFilters = ds.getActiveFilters();
 
@@ -2496,52 +2994,170 @@ class FilterPanel {
         var curMin = active ? active.min : stats.min;
         var curMax = active ? active.max : stats.max;
 
-        var rangeInfo = document.createElement('div');
-        rangeInfo.style.cssText = 'font-size:11px;color:var(--sl-text-muted);margin-bottom:4px;';
-        rangeInfo.textContent = curMin.toLocaleString() + ' — ' + curMax.toLocaleString();
-        section.appendChild(rangeInfo);
+        // Editable min/max inputs
+        var rangeRow = document.createElement('div');
+        rangeRow.style.cssText = 'display:flex;align-items:center;gap:4px;margin-bottom:6px;';
 
-        var minSlider = document.createElement('input');
-        minSlider.type = 'range';
-        minSlider.className = 'sl-filter-range';
-        minSlider.min = stats.min;
-        minSlider.max = stats.max;
-        minSlider.step = (stats.max - stats.min) / 100;
-        minSlider.value = curMin;
-        minSlider.addEventListener('input', function () {
-          ds.setFilter(colName, { type: 'range', min: +minSlider.value, max: +maxSlider.value });
-        });
-        section.appendChild(minSlider);
+        var minInput = document.createElement('input');
+        minInput.type = 'number';
+        minInput.className = 'sl-filter-num';
+        minInput.min = stats.min;
+        minInput.max = stats.max;
+        minInput.step = 'any';
+        minInput.value = curMin;
 
-        var maxSlider = document.createElement('input');
-        maxSlider.type = 'range';
-        maxSlider.className = 'sl-filter-range';
-        maxSlider.min = stats.min;
-        maxSlider.max = stats.max;
-        maxSlider.step = (stats.max - stats.min) / 100;
-        maxSlider.value = curMax;
-        maxSlider.addEventListener('input', function () {
-          ds.setFilter(colName, { type: 'range', min: +minSlider.value, max: +maxSlider.value });
+        var dash = document.createElement('span');
+        dash.style.cssText = 'color:var(--sl-text-muted);font-size:11px;';
+        dash.textContent = '—';
+
+        var maxInput = document.createElement('input');
+        maxInput.type = 'number';
+        maxInput.className = 'sl-filter-num';
+        maxInput.min = stats.min;
+        maxInput.max = stats.max;
+        maxInput.step = 'any';
+        maxInput.value = curMax;
+
+        rangeRow.appendChild(minInput);
+        rangeRow.appendChild(dash);
+        rangeRow.appendChild(maxInput);
+        section.appendChild(rangeRow);
+
+        // Dual-handle range slider
+        var totalRange = stats.max - stats.min;
+        var loPercent = totalRange ? ((curMin - stats.min) / totalRange) * 100 : 0;
+        var hiPercent = totalRange ? ((curMax - stats.min) / totalRange) * 100 : 100;
+
+        var track = document.createElement('div');
+        track.className = 'sl-dualrange';
+
+        var fill = document.createElement('div');
+        fill.className = 'sl-dualrange-fill';
+        fill.style.left = loPercent + '%';
+        fill.style.right = (100 - hiPercent) + '%';
+        track.appendChild(fill);
+
+        var thumbLo = document.createElement('div');
+        thumbLo.className = 'sl-dualrange-thumb';
+        thumbLo.style.left = loPercent + '%';
+        track.appendChild(thumbLo);
+
+        var thumbHi = document.createElement('div');
+        thumbHi.className = 'sl-dualrange-thumb';
+        thumbHi.style.left = hiPercent + '%';
+        track.appendChild(thumbHi);
+
+        function applyRange(lo, hi) {
+          if (lo > hi) { var tmp = lo; lo = hi; hi = tmp; }
+          ds.setFilter(colName, { type: 'range', min: lo, max: hi });
+        }
+
+        function updateVisuals(lo, hi) {
+          var loPct = totalRange ? ((lo - stats.min) / totalRange) * 100 : 0;
+          var hiPct = totalRange ? ((hi - stats.min) / totalRange) * 100 : 100;
+          thumbLo.style.left = loPct + '%';
+          thumbHi.style.left = hiPct + '%';
+          fill.style.left = loPct + '%';
+          fill.style.right = (100 - hiPct) + '%';
+        }
+
+        // Drag logic
+        function makeDraggable(thumb, isLo) {
+          var dragging = false;
+          function onDown(e) {
+            e.preventDefault();
+            dragging = true;
+            UndoManager.beginBatch();
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+            document.addEventListener('touchmove', onMove, { passive: false });
+            document.addEventListener('touchend', onUp);
+          }
+          function onMove(e) {
+            if (!dragging) return;
+            e.preventDefault();
+            var rect = track.getBoundingClientRect();
+            var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            var pct = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
+            var val = stats.min + (pct / 100) * totalRange;
+            val = Math.round(val * 10) / 10; // round to 1 decimal
+            if (isLo) {
+              var hi = +maxInput.value;
+              if (val > hi) val = hi;
+              minInput.value = val;
+              updateVisuals(val, hi);
+              applyRange(val, hi);
+            } else {
+              var lo = +minInput.value;
+              if (val < lo) val = lo;
+              maxInput.value = val;
+              updateVisuals(lo, val);
+              applyRange(lo, val);
+            }
+          }
+          function onUp() {
+            dragging = false;
+            UndoManager.endBatch();
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            document.removeEventListener('touchmove', onMove);
+            document.removeEventListener('touchend', onUp);
+          }
+          thumb.addEventListener('mousedown', onDown);
+          thumb.addEventListener('touchstart', onDown, { passive: false });
+        }
+
+        makeDraggable(thumbLo, true);
+        makeDraggable(thumbHi, false);
+
+        // Click on track to move nearest thumb
+        track.addEventListener('mousedown', function (e) {
+          if (e.target.classList.contains('sl-dualrange-thumb')) return;
+          var rect = track.getBoundingClientRect();
+          var pct = ((e.clientX - rect.left) / rect.width) * 100;
+          var val = stats.min + (pct / 100) * totalRange;
+          var lo = +minInput.value, hi = +maxInput.value;
+          // Move whichever thumb is closer
+          if (Math.abs(val - lo) <= Math.abs(val - hi)) {
+            minInput.value = Math.round(val * 10) / 10;
+            updateVisuals(+minInput.value, hi);
+            applyRange(+minInput.value, hi);
+          } else {
+            maxInput.value = Math.round(val * 10) / 10;
+            updateVisuals(lo, +maxInput.value);
+            applyRange(lo, +maxInput.value);
+          }
         });
-        section.appendChild(maxSlider);
+
+        // Input fields → sync slider + apply
+        minInput.addEventListener('change', function () {
+          var v = +minInput.value;
+          if (isNaN(v)) return;
+          updateVisuals(v, +maxInput.value);
+          applyRange(v, +maxInput.value);
+        });
+        maxInput.addEventListener('change', function () {
+          var v = +maxInput.value;
+          if (isNaN(v)) return;
+          updateVisuals(+minInput.value, v);
+          applyRange(+minInput.value, v);
+        });
+
+        section.appendChild(track);
       } else {
         // Checkbox list
         var values = ds.getColumnValues(colName);
         var active = activeFilters[colName];
-        var selected = active ? active.selected : values;
+        var selected = active ? active.selected.slice() : values.slice();
 
         // Select all / none
         var allBtn = document.createElement('div');
         allBtn.style.cssText = 'font-size:11px;color:var(--sl-accent);cursor:pointer;margin-bottom:4px;';
         allBtn.textContent = selected.length === values.length ? 'Select None' : 'Select All';
-        allBtn.addEventListener('click', function () {
-          if (selected.length === values.length) {
-            ds.setFilter(colName, { type: 'values', selected: [] });
-          } else {
-            ds.clearFilter(colName);
-          }
-        });
-        section.appendChild(allBtn);
+
+        // Build checkboxes first so allBtn can reference them
+        var checkboxes = [];
+        var checkContainer = document.createElement('div');
 
         values.slice(0, 20).forEach(function (v) {
           var lbl = document.createElement('label');
@@ -2549,20 +3165,45 @@ class FilterPanel {
           var cb = document.createElement('input');
           cb.type = 'checkbox';
           cb.checked = selected.indexOf(v) >= 0;
+          checkboxes.push({ checkbox: cb, value: v });
+
           cb.addEventListener('change', function () {
-            var cur = activeFilters[colName] ? activeFilters[colName].selected : values.slice();
-            if (cb.checked) {
-              if (cur.indexOf(v) < 0) cur.push(v);
+            // Read current state from all checkboxes
+            var cur = [];
+            checkboxes.forEach(function (entry) {
+              if (entry.checkbox.checked) cur.push(entry.value);
+            });
+            if (cur.length === values.length) {
+              ds.clearFilter(colName);
+              allBtn.textContent = 'Select None';
             } else {
-              cur = cur.filter(function (x) { return x !== v; });
+              ds.setFilter(colName, { type: 'values', selected: cur });
+              allBtn.textContent = 'Select All';
             }
-            if (cur.length === values.length) ds.clearFilter(colName);
-            else ds.setFilter(colName, { type: 'values', selected: cur });
           });
+
           lbl.appendChild(cb);
           lbl.appendChild(document.createTextNode(v));
-          section.appendChild(lbl);
+          checkContainer.appendChild(lbl);
         });
+
+        allBtn.addEventListener('click', function () {
+          var allChecked = checkboxes.every(function (e) { return e.checkbox.checked; });
+          if (allChecked) {
+            // Uncheck all
+            checkboxes.forEach(function (e) { e.checkbox.checked = false; });
+            ds.setFilter(colName, { type: 'values', selected: [] });
+            allBtn.textContent = 'Select All';
+          } else {
+            // Check all
+            checkboxes.forEach(function (e) { e.checkbox.checked = true; });
+            ds.clearFilter(colName);
+            allBtn.textContent = 'Select None';
+          }
+        });
+
+        section.appendChild(allBtn);
+        section.appendChild(checkContainer);
 
         if (values.length > 20) {
           var more = document.createElement('div');
@@ -2576,16 +3217,191 @@ class FilterPanel {
     });
 
     // Clear all button
+    var self = this;
     var clearAll = document.createElement('button');
     clearAll.style.cssText = 'width:100%;margin-top:12px;padding:8px;background:transparent;border:1px solid var(--sl-panel-border);border-radius:8px;color:var(--sl-text-secondary);cursor:pointer;font-size:12px;font-family:var(--sl-font);';
     clearAll.textContent = 'Clear All Filters';
-    clearAll.addEventListener('click', function () { ds.clearAllFilters(); });
+    clearAll.addEventListener('click', function () {
+      ds.clearAllFilters();
+      self.render(); // full re-render only on explicit clear
+    });
     container.appendChild(clearAll);
   }
 
   destroy() {
-    this._ds.off('filter-changed', this._onFilter);
+    // no-op — removed filter-changed listener
   }
+}
+// ─── ColumnPanel ────────────────────────────────────────────
+class ColumnPanel {
+  constructor(selector, dataStore, config) {
+    this._ds = dataStore;
+    this._config = config || {};
+    this._container = typeof selector === 'string' ? document.querySelector(selector) : selector;
+    if (!this._container) throw new Error('ColumnPanel: container not found');
+
+    var self = this;
+    this._ds.on('data-loaded', function () { self.render(); });
+    this._ds.on('column-added', function () { self.render(); });
+    this._ds.on('column-removed', function () { self.render(); });
+    this.render();
+  }
+
+  render() {
+    var ds = this._ds;
+    var cols = ds.getColumns().filter(function (c) { return c.name !== '__rowIndex'; });
+    var container = this._container;
+    container.innerHTML = '';
+    container.className = (container.className.indexOf('sl-column-panel') < 0 ? container.className + ' ' : '') + 'sl-column-panel';
+
+    // Title
+    var title = document.createElement('div');
+    title.className = 'sl-colpanel-title';
+    title.textContent = 'Columns';
+    container.appendChild(title);
+
+    // Column list
+    cols.forEach(function (col) {
+      var section = document.createElement('div');
+      section.className = 'sl-colpanel-item';
+
+      // Column name + type badge
+      var header = document.createElement('div');
+      header.className = 'sl-colpanel-header';
+
+      var nameEl = document.createElement('span');
+      nameEl.className = 'sl-colpanel-name';
+      nameEl.textContent = col.name;
+      header.appendChild(nameEl);
+
+      var badge = document.createElement('span');
+      badge.className = 'sl-colpanel-badge';
+      badge.textContent = col.type === 'number' ? 'NUM' : col.type === 'date' ? 'DATE' : 'STR';
+      badge.style.background = col.type === 'number' ? 'var(--sl-accent)' : col.type === 'date' ? '#f59e0b' : 'var(--sl-text-muted)';
+      header.appendChild(badge);
+
+      section.appendChild(header);
+
+      // Format selector — only for numeric columns
+      if (col.type === 'number') {
+        var curFmt = ds.getColumnFormat(col.name);
+
+        var formatRow = document.createElement('div');
+        formatRow.className = 'sl-colpanel-format-row';
+
+        // Format type dropdown
+        var fmtSelect = document.createElement('select');
+        fmtSelect.className = 'sl-colpanel-select';
+        var formats = [
+          { value: 'auto', label: 'Auto' },
+          { value: 'integer', label: 'Integer' },
+          { value: 'decimal', label: 'Decimal' },
+          { value: 'currency', label: 'Currency' },
+          { value: 'percent', label: 'Percent' },
+          { value: 'scientific', label: 'Scientific' },
+        ];
+        formats.forEach(function (f) {
+          var opt = document.createElement('option');
+          opt.value = f.value;
+          opt.textContent = f.label;
+          if (curFmt.type === f.value) opt.selected = true;
+          fmtSelect.appendChild(opt);
+        });
+        formatRow.appendChild(fmtSelect);
+
+        // Currency selector (shown only when currency selected)
+        var currencySelect = document.createElement('select');
+        currencySelect.className = 'sl-colpanel-select sl-colpanel-currency';
+        var currencies = [
+          { value: 'USD', label: '$ USD' },
+          { value: 'PHP', label: '\u20B1 PHP' },
+          { value: 'EUR', label: '\u20AC EUR' },
+          { value: 'GBP', label: '\u00A3 GBP' },
+          { value: 'JPY', label: '\u00A5 JPY' },
+          { value: 'KRW', label: '\u20A9 KRW' },
+          { value: 'CNY', label: '\u00A5 CNY' },
+          { value: 'INR', label: '\u20B9 INR' },
+          { value: 'BRL', label: 'R$ BRL' },
+          { value: 'MXN', label: 'MX$ MXN' },
+        ];
+        currencies.forEach(function (c) {
+          var opt = document.createElement('option');
+          opt.value = c.value;
+          opt.textContent = c.label;
+          if (curFmt.currency === c.value) opt.selected = true;
+          currencySelect.appendChild(opt);
+        });
+        currencySelect.style.display = curFmt.type === 'currency' ? '' : 'none';
+        formatRow.appendChild(currencySelect);
+
+        // Decimals selector (shown for decimal, currency, percent, scientific)
+        var decSelect = document.createElement('select');
+        decSelect.className = 'sl-colpanel-select sl-colpanel-dec';
+        for (var d = 0; d <= 6; d++) {
+          var opt = document.createElement('option');
+          opt.value = d;
+          opt.textContent = d + ' dec';
+          if ((curFmt.decimals != null ? curFmt.decimals : 2) === d) opt.selected = true;
+          decSelect.appendChild(opt);
+        }
+        var showDec = ['decimal', 'currency', 'percent', 'scientific'].indexOf(curFmt.type) >= 0;
+        decSelect.style.display = showDec ? '' : 'none';
+        formatRow.appendChild(decSelect);
+
+        section.appendChild(formatRow);
+
+        // Preview
+        var preview = document.createElement('div');
+        preview.className = 'sl-colpanel-preview';
+        var sampleVal = null;
+        var rows = ds._rows;
+        for (var i = 0; i < rows.length && i < 10; i++) {
+          if (typeof rows[i][col.name] === 'number') { sampleVal = rows[i][col.name]; break; }
+        }
+        if (sampleVal !== null) {
+          preview.textContent = ds.formatValue(sampleVal, col.name);
+        }
+        section.appendChild(preview);
+
+        // Change handlers
+        function applyFormat() {
+          var type = fmtSelect.value;
+          var spec = { type: type };
+          if (type === 'currency') {
+            spec.currency = currencySelect.value;
+            spec.decimals = +decSelect.value;
+          } else if (['decimal', 'percent', 'scientific'].indexOf(type) >= 0) {
+            spec.decimals = +decSelect.value;
+          }
+
+          // Show/hide sub-selectors
+          currencySelect.style.display = type === 'currency' ? '' : 'none';
+          decSelect.style.display = ['decimal', 'currency', 'percent', 'scientific'].indexOf(type) >= 0 ? '' : 'none';
+
+          ds.setColumnFormat(col.name, spec);
+
+          // Update preview
+          if (sampleVal !== null) {
+            preview.textContent = ds.formatValue(sampleVal, col.name);
+          }
+        }
+
+        fmtSelect.addEventListener('change', applyFormat);
+        currencySelect.addEventListener('change', applyFormat);
+        decSelect.addEventListener('change', applyFormat);
+      } else {
+        // Non-numeric: just show type
+        var info = document.createElement('div');
+        info.className = 'sl-colpanel-preview';
+        info.textContent = col.type === 'date' ? 'Date column' : 'Text column';
+        section.appendChild(info);
+      }
+
+      container.appendChild(section);
+    });
+  }
+
+  destroy() {}
 }
 // ─── FormulaBar ─────────────────────────────────────────────
 class FormulaBar {
@@ -2699,6 +3515,26 @@ class Toolbar {
       bar.appendChild(select);
     }
 
+    // Undo / Redo buttons
+    var undoBtn = document.createElement('button');
+    undoBtn.textContent = '\u21A9 Undo';
+    undoBtn.title = 'Undo (Ctrl+Z)';
+    undoBtn.disabled = !UndoManager.canUndo();
+    undoBtn.addEventListener('click', function () { UndoManager.undo(); });
+    bar.appendChild(undoBtn);
+
+    var redoBtn = document.createElement('button');
+    redoBtn.textContent = '\u21AA Redo';
+    redoBtn.title = 'Redo (Ctrl+Y)';
+    redoBtn.disabled = !UndoManager.canRedo();
+    redoBtn.addEventListener('click', function () { UndoManager.redo(); });
+    bar.appendChild(redoBtn);
+
+    UndoManager.on('changed', function () {
+      undoBtn.disabled = !UndoManager.canUndo();
+      redoBtn.disabled = !UndoManager.canRedo();
+    });
+
     container.appendChild(bar);
   }
 }
@@ -2721,11 +3557,17 @@ var SpottyFire = {
   FilterPanel: function (sel, ds, cfg) { return new FilterPanel(sel, ds, cfg); },
   FormulaBar: function (sel, ds, cfg) { return new FormulaBar(sel, ds, cfg); },
   Toolbar: function (sel, ds, cfg) { return new Toolbar(sel, ds, cfg); },
+  ColumnPanel: function (sel, ds, cfg) { return new ColumnPanel(sel, ds, cfg); },
 
   // Theme API
   setTheme: function (t) { ThemeManager.setTheme(t); },
   getTheme: function () { return ThemeManager.getTheme(); },
   getThemeNames: function () { return ThemeManager.getThemeNames(); },
+
+  // Undo/Redo
+  UndoManager: UndoManager,
+  undo: function () { UndoManager.undo(); },
+  redo: function () { UndoManager.redo(); },
 
   // Version
   version: '1.0.0',

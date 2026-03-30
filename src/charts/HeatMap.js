@@ -36,6 +36,7 @@ class HeatMap extends BaseChart {
       hasMarking = false;
     }
 
+    var ds = this._ds;
     var xCol = cfg.x;
     var yCol = cfg.y;
     var valCol = cfg.value;
@@ -82,7 +83,7 @@ class HeatMap extends BaseChart {
           else if (agg === 'max') val = Math.max.apply(null, arr);
         }
         row.push(val);
-        txtRow.push(val ? val.toFixed(1) : '');
+        txtRow.push(val ? ds.formatValue(val, valCol) : '');
         cdRow.push(gridRows[key] || []);
       });
       z.push(row);
@@ -101,12 +102,12 @@ class HeatMap extends BaseChart {
       z: z,
       colorscale: colorscale,
       showscale: true,
-      hovertemplate: xCol + ': %{x}<br>' + yCol + ': %{y}<br>' + valCol + ': %{z:.1f}<extra></extra>',
+      hovertemplate: xCol + ': %{x}<br>' + yCol + ': %{y}<br>' + valCol + ': %{text}<extra></extra>',
       customdata: customdata,
     };
 
+    trace.text = textVals; // always set for hover
     if (cfg.showValues) {
-      trace.text = textVals;
       trace.texttemplate = '%{text}';
       trace.textfont = { size: 11, color: theme.textPrimary };
     }

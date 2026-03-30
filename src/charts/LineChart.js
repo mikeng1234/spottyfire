@@ -106,6 +106,8 @@ class LineChart extends BaseChart {
       xaxis: { title: { text: xCol } },
       yaxis: { title: { text: yCols.join(', ') } },
     });
+    this._applyAxisFormat(layout.xaxis, xCol);
+    this._applyAxisFormat(layout.yaxis, yCols[0]);
 
     Plotly.react(this._getPlotDiv(), traces, layout, this._plotlyConfig());
   }

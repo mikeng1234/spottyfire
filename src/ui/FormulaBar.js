@@ -110,6 +110,26 @@ class Toolbar {
       bar.appendChild(select);
     }
 
+    // Undo / Redo buttons
+    var undoBtn = document.createElement('button');
+    undoBtn.textContent = '\u21A9 Undo';
+    undoBtn.title = 'Undo (Ctrl+Z)';
+    undoBtn.disabled = !UndoManager.canUndo();
+    undoBtn.addEventListener('click', function () { UndoManager.undo(); });
+    bar.appendChild(undoBtn);
+
+    var redoBtn = document.createElement('button');
+    redoBtn.textContent = '\u21AA Redo';
+    redoBtn.title = 'Redo (Ctrl+Y)';
+    redoBtn.disabled = !UndoManager.canRedo();
+    redoBtn.addEventListener('click', function () { UndoManager.redo(); });
+    bar.appendChild(redoBtn);
+
+    UndoManager.on('changed', function () {
+      undoBtn.disabled = !UndoManager.canUndo();
+      redoBtn.disabled = !UndoManager.canRedo();
+    });
+
     container.appendChild(bar);
   }
 }

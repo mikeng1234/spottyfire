@@ -31,15 +31,25 @@ class BaseChart {
     };
     this._onFilter = function () { self.refresh(); };
     this._onTheme = function () { self.refresh(); };
+    this._onFormat = function () { self.refresh(); };
 
     this._mm.on('marking-changed', this._onMarking);
     this._ds.on('filter-changed', this._onFilter);
+    this._ds.on('format-changed', this._onFormat);
     ThemeManager.on(this._onTheme);
   }
 
   getConfig() { return Object.assign({}, this._config); }
 
   updateConfig(newConfig) {
+    // Capture previous values for undo
+    var prevConfig = {};
+    for (var key in newConfig) {
+      if (newConfig.hasOwnProperty(key)) {
+        prevConfig[key] = this._config[key];
+      }
+    }
+
     Object.assign(this._config, newConfig);
     if (newConfig.title && this._wrapper) {
       this._wrapper.querySelector('.sl-panel-header span').textContent = newConfig.title;
@@ -47,18 +57,42 @@ class BaseChart {
     // If dataLimitedBy changed, re-evaluate limit set
     if ('dataLimitedBy' in newConfig) {
       if (!newConfig.dataLimitedBy) {
-        this._limitSet = null; // cleared
+        this._limitSet = null;
       } else {
-        // Grab current marking state from source chart
         var mm = this._mm;
         if (mm.hasMarking()) {
           this._limitSet = mm.getMarkedIndices();
         } else {
-          this._limitSet = new Set(); // source has nothing marked → empty
+          this._limitSet = new Set();
         }
       }
     }
     this.refresh();
+
+    // Push undo command
+    var self = this;
+    var newCfg = JSON.parse(JSON.stringify(newConfig));
+    var prevCfg = JSON.parse(JSON.stringify(prevConfig));
+    UndoManager.push({
+      type: 'chartConfig',
+      label: 'Update ' + (self._config.title || self._id),
+      undo: function () {
+        if (!self._container) return;
+        Object.assign(self._config, prevCfg);
+        if ('dataLimitedBy' in prevCfg) {
+          self._limitSet = prevCfg.dataLimitedBy ? new Set() : null;
+        }
+        self.refresh();
+      },
+      redo: function () {
+        if (!self._container) return;
+        Object.assign(self._config, newCfg);
+        if ('dataLimitedBy' in newCfg) {
+          self._limitSet = newCfg.dataLimitedBy ? new Set() : null;
+        }
+        self.refresh();
+      },
+    });
   }
 
   // Handle data limiting: track marking from the source chart
@@ -151,6 +185,15 @@ class BaseChart {
     return true; // had error
   }
 
+  // Apply column format to a Plotly axis layout object
+  _applyAxisFormat(axisLayout, colName) {
+    var fmt = this._ds.getPlotlyAxisFormat(colName);
+    if (fmt.tickformat) axisLayout.tickformat = fmt.tickformat;
+    if (fmt.tickprefix) axisLayout.tickprefix = fmt.tickprefix;
+    if (fmt.ticksuffix) axisLayout.ticksuffix = fmt.ticksuffix;
+    return axisLayout;
+  }
+
   refresh() {
     // Override in subclass
   }
@@ -175,6 +218,7 @@ class BaseChart {
     this._ds._unregisterChart(this);
     this._mm.off('marking-changed', this._onMarking);
     this._ds.off('filter-changed', this._onFilter);
+    this._ds.off('format-changed', this._onFormat);
     ThemeManager.off(this._onTheme);
     var div = this._getPlotDiv();
     if (div && typeof Plotly !== 'undefined') {

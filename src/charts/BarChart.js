@@ -33,76 +33,149 @@ class BarChart extends BaseChart {
       return;
     }
 
-    // showOnlyMarked: filter to marked rows
     if (cfg.showOnlyMarked && hasMarking) {
       rows = rows.filter(function (r) { return mm.isMarked(r.__rowIndex); });
-      hasMarking = false; // no need to split — already filtered
+      hasMarking = false;
     }
 
-    // Aggregate
-    var groups = {};
-    var groupRows = {};
-    rows.forEach(function (r) {
-      var key = String(r[cat] || 'Unknown');
-      if (!groups[key]) { groups[key] = []; groupRows[key] = []; }
-      groups[key].push(+r[val] || 0);
-      groupRows[key].push(r.__rowIndex);
-    });
+    var traces = [];
 
-    var categories = Object.keys(groups);
-    var values = categories.map(function (k) {
-      var arr = groups[k];
+    function _agg(arr) {
+      if (arr.length === 0) return 0;
       if (agg === 'sum') return arr.reduce(function (a, b) { return a + b; }, 0);
       if (agg === 'avg') return arr.reduce(function (a, b) { return a + b; }, 0) / arr.length;
       if (agg === 'count') return arr.length;
       if (agg === 'min') return Math.min.apply(null, arr);
       if (agg === 'max') return Math.max.apply(null, arr);
       return arr.reduce(function (a, b) { return a + b; }, 0);
-    });
+    }
 
-    var traces = [];
-    var mm = this._mm;
+    // Get unique categories
+    var catSet = {};
+    rows.forEach(function (r) { catSet[String(r[cat] || 'Unknown')] = true; });
+    var categories = Object.keys(catSet);
 
-    if (hasMarking) {
-      // Split into marked / unmarked
-      var markedVals = [];
-      var unmarkedVals = [];
-      categories.forEach(function (k, i) {
-        var markedCount = 0, markedSum = 0;
-        var unmarkedCount = 0, unmarkedSum = 0;
-        groupRows[k].forEach(function (ri, j) {
-          if (mm.isMarked(ri)) { markedCount++; markedSum += groups[k][j]; }
-          else { unmarkedCount++; unmarkedSum += groups[k][j]; }
-        });
-        var mv = agg === 'count' ? markedCount : agg === 'avg' ? (markedCount ? markedSum / markedCount : 0) : markedSum;
-        var uv = agg === 'count' ? unmarkedCount : agg === 'avg' ? (unmarkedCount ? unmarkedSum / unmarkedCount : 0) : unmarkedSum;
-        markedVals.push(markedCount > 0 ? mv : 0);
-        unmarkedVals.push(unmarkedCount > 0 ? uv : 0);
+    if (colorBy && colorBy !== cat) {
+      // ── Stacked bar: one trace per colorBy value ──
+      var colorValues = {};
+      rows.forEach(function (r) { colorValues[String(r[colorBy] || 'Other')] = true; });
+      var colorKeys = Object.keys(colorValues);
+
+      // Build a grid: [colorKey][category] → { vals:[], indices:[] }
+      var grid = {};
+      colorKeys.forEach(function (ck) {
+        grid[ck] = {};
+        categories.forEach(function (c) { grid[ck][c] = { vals: [], indices: [] }; });
+      });
+      rows.forEach(function (r) {
+        var c = String(r[cat] || 'Unknown');
+        var ck = String(r[colorBy] || 'Other');
+        grid[ck][c].vals.push(+r[val] || 0);
+        grid[ck][c].indices.push(r.__rowIndex);
       });
 
-      var markedTrace = {
-        name: 'Selected',
+      colorKeys.forEach(function (ck, ci) {
+        var baseColor = theme.palette[ci % theme.palette.length];
+        var aggVals = categories.map(function (c) { return _agg(grid[ck][c].vals); });
+        var rowIndices = categories.map(function (c) { return grid[ck][c].indices; });
+
+        if (hasMarking) {
+          // Split each segment into marked/unmarked
+          var markedVals = [];
+          var unmarkedVals = [];
+          categories.forEach(function (c) {
+            var cell = grid[ck][c];
+            var mSum = 0, mCount = 0, uSum = 0, uCount = 0;
+            cell.indices.forEach(function (ri, j) {
+              if (mm.isMarked(ri)) { mCount++; mSum += cell.vals[j]; }
+              else { uCount++; uSum += cell.vals[j]; }
+            });
+            markedVals.push(_agg(mCount > 0 ? (agg === 'count' ? new Array(mCount) : [mSum]) : []));
+            unmarkedVals.push(_agg(uCount > 0 ? (agg === 'count' ? new Array(uCount) : [uSum]) : []));
+          });
+
+          // Marked trace
+          var mTrace = { type: 'bar', name: ck, legendgroup: ck, showlegend: true,
+            marker: { color: baseColor, opacity: 1, line: { width: 0 } },
+            customdata: rowIndices, hoverinfo: 'x+y+name' };
+          var uTrace = { type: 'bar', name: ck, legendgroup: ck, showlegend: false,
+            marker: { color: theme.unmarkedColor || '#888', opacity: theme.unmarkedOpacity, line: { width: 0 } },
+            customdata: rowIndices, hoverinfo: 'x+y+name' };
+
+          if (orientation === 'horizontal') {
+            mTrace.y = categories; mTrace.x = markedVals; mTrace.orientation = 'h';
+            uTrace.y = categories; uTrace.x = unmarkedVals; uTrace.orientation = 'h';
+          } else {
+            mTrace.x = categories; mTrace.y = markedVals;
+            uTrace.x = categories; uTrace.y = unmarkedVals;
+          }
+          traces.push(mTrace);
+          traces.push(uTrace);
+        } else {
+          var trace = { type: 'bar', name: ck,
+            marker: { color: baseColor, opacity: 0.9, line: { width: 0 } },
+            customdata: rowIndices, hoverinfo: 'x+y+name' };
+
+          if (orientation === 'horizontal') {
+            trace.y = categories; trace.x = aggVals; trace.orientation = 'h';
+          } else {
+            trace.x = categories; trace.y = aggVals;
+          }
+          traces.push(trace);
+        }
+      });
+    } else if (hasMarking) {
+      // ── No colorBy, but has marking → split into marked/unmarked ──
+      var groupRows = {};
+      var groups = {};
+      rows.forEach(function (r) {
+        var key = String(r[cat] || 'Unknown');
+        if (!groups[key]) { groups[key] = []; groupRows[key] = []; }
+        groups[key].push(+r[val] || 0);
+        groupRows[key].push(r.__rowIndex);
+      });
+
+      var markedVals = [];
+      var unmarkedVals = [];
+      categories.forEach(function (k) {
+        var mCount = 0, mSum = 0, uCount = 0, uSum = 0;
+        groupRows[k].forEach(function (ri, j) {
+          if (mm.isMarked(ri)) { mCount++; mSum += groups[k][j]; }
+          else { uCount++; uSum += groups[k][j]; }
+        });
+        var mv = agg === 'count' ? mCount : agg === 'avg' ? (mCount ? mSum / mCount : 0) : mSum;
+        var uv = agg === 'count' ? uCount : agg === 'avg' ? (uCount ? uSum / uCount : 0) : uSum;
+        markedVals.push(mCount > 0 ? mv : 0);
+        unmarkedVals.push(uCount > 0 ? uv : 0);
+      });
+
+      var markedTrace = { type: 'bar', name: 'Selected',
         marker: { color: theme.marking, opacity: 1, line: { width: 0 } },
-        customdata: categories.map(function (k) { return groupRows[k]; }),
-        hoverinfo: 'x+y',
-      };
-      var unmarkedTrace = {
-        name: 'Other',
+        customdata: categories.map(function (k) { return groupRows[k]; }), hoverinfo: 'x+y' };
+      var unmarkedTrace = { type: 'bar', name: 'Other',
         marker: { color: theme.unmarkedColor || '#888', opacity: theme.unmarkedOpacity },
-        customdata: categories.map(function (k) { return groupRows[k]; }),
-        hoverinfo: 'x+y',
-      };
+        customdata: categories.map(function (k) { return groupRows[k]; }), hoverinfo: 'x+y' };
 
       if (orientation === 'horizontal') {
-        markedTrace.y = categories; markedTrace.x = markedVals; markedTrace.type = 'bar'; markedTrace.orientation = 'h';
-        unmarkedTrace.y = categories; unmarkedTrace.x = unmarkedVals; unmarkedTrace.type = 'bar'; unmarkedTrace.orientation = 'h';
+        markedTrace.y = categories; markedTrace.x = markedVals; markedTrace.orientation = 'h';
+        unmarkedTrace.y = categories; unmarkedTrace.x = unmarkedVals; unmarkedTrace.orientation = 'h';
       } else {
-        markedTrace.x = categories; markedTrace.y = markedVals; markedTrace.type = 'bar';
-        unmarkedTrace.x = categories; unmarkedTrace.y = unmarkedVals; unmarkedTrace.type = 'bar';
+        markedTrace.x = categories; markedTrace.y = markedVals;
+        unmarkedTrace.x = categories; unmarkedTrace.y = unmarkedVals;
       }
       traces = [markedTrace, unmarkedTrace];
     } else {
-      // No marking — use palette colors
+      // ── No colorBy, no marking → simple colored bars ──
+      var groupRows = {};
+      var groups = {};
+      rows.forEach(function (r) {
+        var key = String(r[cat] || 'Unknown');
+        if (!groups[key]) { groups[key] = []; groupRows[key] = []; }
+        groups[key].push(+r[val] || 0);
+        groupRows[key].push(r.__rowIndex);
+      });
+
+      var values = categories.map(function (k) { return _agg(groups[k]); });
       var colors = categories.map(function (_, i) { return theme.palette[i % theme.palette.length]; });
       var trace = {
         type: 'bar',
@@ -110,9 +183,7 @@ class BarChart extends BaseChart {
         customdata: categories.map(function (k) { return groupRows[k]; }),
         hoverinfo: 'x+y',
       };
-      if (cfg.barRadius) {
-        // Plotly doesn't natively support border-radius, but we add rounded look via marker line
-      }
+
       if (orientation === 'horizontal') {
         trace.y = categories; trace.x = values; trace.orientation = 'h';
       } else {
@@ -120,7 +191,9 @@ class BarChart extends BaseChart {
       }
 
       if (cfg.showValues) {
-        trace.text = values.map(function (v) { return typeof v === 'number' ? v.toLocaleString(undefined, { maximumFractionDigits: 1 }) : v; });
+        var ds = this._ds;
+        var valCol = cfg.value;
+        trace.text = values.map(function (v) { return ds.formatValue(v, valCol); });
         trace.textposition = 'outside';
         trace.textfont = { size: 11, color: theme.textSecondary };
       }
@@ -128,15 +201,18 @@ class BarChart extends BaseChart {
     }
 
     var layout = ThemeManager.getPlotlyLayout({
-      barmode: hasMarking ? 'stack' : 'group',
-      showlegend: hasMarking,
+      barmode: (colorBy || hasMarking) ? 'stack' : 'group',
+      showlegend: !!(colorBy || hasMarking),
     });
+    // Apply column format to value axis
     if (orientation === 'horizontal') {
+      this._applyAxisFormat(layout.xaxis, val);
       layout.yaxis.automargin = true;
+    } else {
+      this._applyAxisFormat(layout.yaxis, val);
     }
 
-    var div = this._getPlotDiv();
-    Plotly.react(div, traces, layout, this._plotlyConfig());
+    Plotly.react(this._getPlotDiv(), traces, layout, this._plotlyConfig());
   }
 
   _onMarkingChanged() {

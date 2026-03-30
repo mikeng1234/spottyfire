@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpottyFire — Sales Correlation Analysis</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="../dist/spottyfire.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    .app { display: flex; min-height: 100vh; }
+
+    /* Left sidebar — Column Formats */
+    .sidebar-left {
+      width: 200px; min-width: 200px; background: var(--sl-panel-bg);
+      border-right: 1px solid var(--sl-panel-border); overflow-y: auto;
+      transition: width 250ms ease, min-width 250ms ease;
+    }
+    .sidebar-left.collapsed { width: 0; min-width: 0; border-right: none; overflow: hidden; }
+
+    /* Right sidebar — Filters */
+    .sidebar-right {
+      width: 220px; min-width: 220px; background: var(--sl-panel-bg);
+      border-left: 1px solid var(--sl-panel-border); overflow-y: auto;
+      transition: width 250ms ease, min-width 250ms ease;
+    }
+    .sidebar-right.collapsed { width: 0; min-width: 0; border-left: none; overflow: hidden; }
+
+    .sidebar-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px; border-bottom: 1px solid var(--sl-panel-border);
+      font-size: 13px; font-weight: 700; color: var(--sl-text-primary);
+    }
+    .sidebar-header button {
+      background: none; border: 1px solid var(--sl-panel-border); border-radius: 5px;
+      color: var(--sl-text-muted); cursor: pointer; padding: 2px 7px; font-size: 10px;
+      font-family: var(--sl-font); transition: all 200ms ease;
+    }
+    .sidebar-header button:hover { border-color: var(--sl-accent); color: var(--sl-text-primary); }
+
+    /* Toggle tabs */
+    .sidebar-tab {
+      position: fixed; top: 50%; z-index: 30;
+      background: var(--sl-panel-bg); border: 1px solid var(--sl-panel-border);
+      color: var(--sl-text-muted); cursor: pointer; padding: 12px 6px;
+      font-size: 11px; writing-mode: vertical-lr; letter-spacing: 1px;
+      font-family: var(--sl-font); transition: all 200ms ease; display: none;
+    }
+    .sidebar-tab:hover { color: var(--sl-text-primary); border-color: var(--sl-accent); }
+    .tab-left { left: 0; border-left: none; border-radius: 0 6px 6px 0; transform: translateY(-50%) rotate(180deg); }
+    .tab-right { right: 0; border-right: none; border-radius: 6px 0 0 6px; transform: translateY(-50%); }
+    .tab-left.visible, .tab-right.visible { display: block; }
+
+    .main { flex: 1; padding: 24px; overflow-y: auto; min-width: 0; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .full { grid-column: 1 / -1; }
+    .chart { min-height: 380px; }
+    .table { height: 300px; }
+    h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px; }
+    p.sub { color: var(--sl-text-secondary); font-size: 13px; margin: 0 0 16px; }
+    .insight-box {
+      background: var(--sl-panel-bg); border: 1px solid var(--sl-panel-border);
+      border-radius: 10px; padding: 14px 18px; margin-bottom: 16px;
+      font-size: 13px; color: var(--sl-text-secondary); line-height: 1.6;
+    }
+    .insight-box strong { color: var(--sl-text-primary); }
+  </style>
+</head>
+<body>
+  <!-- Toggle tabs -->
+  <button class="sidebar-tab tab-left" id="tabLeft" onclick="toggleLeft()">COLUMNS</button>
+  <button class="sidebar-tab tab-right" id="tabRight" onclick="toggleRight()">FILTERS</button>
+
+  <div class="app">
+    <!-- Left: Column Format Panel -->
+    <aside class="sidebar-left" id="sidebarLeft">
+      <div class="sidebar-header">
+        <span>Columns</span>
+        <button onclick="toggleLeft()">&laquo; Hide</button>
+      </div>
+      <div id="columns"></div>
+    </aside>
+
+    <!-- Center: Charts -->
+    <div class="main">
+      <div class="grid">
+        <div class="full">
+          <h1>Sales Correlation Analysis</h1>
+          <p class="sub">Explore relationships between ad spend, units sold, revenue, ratings, and return rates. Set column formats on the left.</p>
+        </div>
+        <div id="toolbar" class="full"></div>
+        <div class="insight-box full">
+          <strong>Correlations:</strong>
+          Ad Spend vs Units Sold (strong +) &bull;
+          Rating vs Return Rate (strong &minus;) &bull;
+          Rep Experience vs Revenue (+) &bull;
+          Use axis dropdowns to switch variables. Set formats in the left panel.
+        </div>
+        <div id="spend-vs-units" class="chart"></div>
+        <div id="rating-vs-returns" class="chart"></div>
+        <div id="revenue-by-category" class="chart"></div>
+        <div id="revenue-by-channel" class="chart"></div>
+        <div id="spend-vs-revenue" class="chart full"></div>
+        <div id="table" class="table full"></div>
+      </div>
+    </div>
+
+    <!-- Right: Filters -->
+    <aside class="sidebar-right" id="sidebarRight">
+      <div class="sidebar-header">
+        <span>Filters</span>
+        <button onclick="toggleRight()">Hide &raquo;</button>
+      </div>
+      <div id="filters"></div>
+    </aside>
+  </div>
+
+  <script>
+    function toggleLeft() {
+      var sb = document.getElementById('sidebarLeft');
+      var tab = document.getElementById('tabLeft');
+      var c = sb.classList.toggle('collapsed');
+      sb.style.display = 'none'; void sb.offsetWidth; sb.style.display = '';
+      tab.classList.toggle('visible', c);
+      setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 300);
+    }
+    function toggleRight() {
+      var sb = document.getElementById('sidebarRight');
+      var tab = document.getElementById('tabRight');
+      var c = sb.classList.toggle('collapsed');
+      sb.style.display = 'none'; void sb.offsetWidth; sb.style.display = '';
+      tab.classList.toggle('visible', c);
+      setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 300);
+    }
+
+    SpottyFire.setTheme('obsidian');
+    var ds = new SpottyFire.DataStore();
+
+    ds.loadCSV('../data/sample-sales.csv').then(function () {
+      ds.addCalculatedColumn('ROI', '([Revenue] - [AdSpend]) / [AdSpend]');
+      ds.addCalculatedColumn('RevenuePerUnit', '[Revenue] / [UnitsSold]');
+
+      // Set some default formats
+      ds.setColumnFormat('AdSpend', { type: 'currency', currency: 'USD', decimals: 0 });
+      ds.setColumnFormat('Revenue', { type: 'currency', currency: 'USD', decimals: 0 });
+      ds.setColumnFormat('Price', { type: 'currency', currency: 'USD', decimals: 2 });
+      ds.setColumnFormat('ReturnRate', { type: 'percent', decimals: 1 });
+      ds.setColumnFormat('ROI', { type: 'decimal', decimals: 2 });
+      ds.setColumnFormat('UnitsSold', { type: 'integer' });
+
+      // Column format panel (left)
+      SpottyFire.ColumnPanel('#columns', ds);
+
+      // Filter panel (right)
+      SpottyFire.FilterPanel('#filters', ds, {
+        columns: ['Category', 'Region', 'Channel', 'SalesRep', 'AdSpend', 'Price', 'CustomerRating']
+      });
+
+      SpottyFire.Toolbar('#toolbar', ds, {
+        showExport: true, showThemeToggle: true,
+        themes: ['obsidian', 'porcelain', 'midnight', 'arctic']
+      });
+
+      SpottyFire.ScatterPlot('#spend-vs-units', ds, {
+        x: 'AdSpend', y: 'UnitsSold', colorBy: 'Category', pointSize: 8,
+        title: 'Ad Spend vs Units Sold'
+      });
+
+      SpottyFire.ScatterPlot('#rating-vs-returns', ds, {
+        x: 'CustomerRating', y: 'ReturnRate', colorBy: 'Category', pointSize: 8,
+        title: 'Rating vs Return Rate'
+      });
+
+      SpottyFire.BarChart('#revenue-by-category', ds, {
+        category: 'Category', value: 'Revenue', aggregation: 'sum',
+        colorBy: 'Channel', title: 'Revenue by Category'
+      });
+
+      SpottyFire.BarChart('#revenue-by-channel', ds, {
+        category: 'Channel', value: 'Revenue', aggregation: 'avg',
+        colorBy: 'Region', title: 'Avg Revenue by Channel & Region'
+      });
+
+      SpottyFire.ScatterPlot('#spend-vs-revenue', ds, {
+        x: 'AdSpend', y: 'Revenue', colorBy: 'SalesRep', pointSize: 7,
+        title: 'Ad Spend vs Revenue by Sales Rep'
+      });
+
+      SpottyFire.DataTable('#table', ds, {
+        columns: ['SaleID', 'Product', 'Category', 'SalesRep', 'AdSpend', 'UnitsSold', 'Revenue', 'ROI', 'CustomerRating', 'ReturnRate'],
+        showOnlyMarked: true, pageSize: 15,
+        title: 'Selected Sales Records'
+      });
+    });
+  </script>
+</body>
+</html>

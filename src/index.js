@@ -17,11 +17,17 @@ var SpottyFire = {
   FilterPanel: function (sel, ds, cfg) { return new FilterPanel(sel, ds, cfg); },
   FormulaBar: function (sel, ds, cfg) { return new FormulaBar(sel, ds, cfg); },
   Toolbar: function (sel, ds, cfg) { return new Toolbar(sel, ds, cfg); },
+  ColumnPanel: function (sel, ds, cfg) { return new ColumnPanel(sel, ds, cfg); },
 
   // Theme API
   setTheme: function (t) { ThemeManager.setTheme(t); },
   getTheme: function () { return ThemeManager.getTheme(); },
   getThemeNames: function () { return ThemeManager.getThemeNames(); },
+
+  // Undo/Redo
+  UndoManager: UndoManager,
+  undo: function () { UndoManager.undo(); },
+  redo: function () { UndoManager.redo(); },
 
   // Version
   version: '1.0.0',

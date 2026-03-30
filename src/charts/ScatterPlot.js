@@ -141,6 +141,8 @@ class ScatterPlot extends BaseChart {
       yaxis: { title: { text: cfg.y } },
       dragmode: 'select',
     });
+    this._applyAxisFormat(layout.xaxis, cfg.x);
+    this._applyAxisFormat(layout.yaxis, cfg.y);
 
     var div = this._getPlotDiv();
     Plotly.react(div, traces, layout, this._plotlyConfig());

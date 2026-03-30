@@ -17,6 +17,31 @@ var ChartWrapper = (function () {
     return select;
   }
 
+  // Helper: axis dropdown that refreshes options from chart's current dataset columns on focus
+  function _makeAxisSelect(label, getVal, chartInst, onChange) {
+    var select = document.createElement('select');
+    select.title = label;
+    select.className = 'sl-axis-select';
+
+    function _populate() {
+      var curVal = getVal();
+      select.innerHTML = '';
+      var cols = chartInst._ds.getColumnNames();
+      cols.forEach(function (c) {
+        var el = document.createElement('option');
+        el.value = c;
+        el.textContent = c;
+        if (c === curVal) el.selected = true;
+        select.appendChild(el);
+      });
+    }
+
+    _populate();
+    select.addEventListener('focus', _populate);
+    select.addEventListener('change', function () { onChange(select.value); });
+    return select;
+  }
+
   // Inject CSS once
   function _injectCSS() {
     if (document.getElementById('sl-axis-css')) return;
@@ -255,8 +280,8 @@ var ChartWrapper = (function () {
       }));
     }
 
-    // Data Limited By — header dropdown for charts WITHOUT a sidebar
-    if (ds && !supportsColorBy) {
+    // Data Limited By — header dropdown for ALL chart types
+    if (ds) {
       var limitHeaderSelect = _makeSelect('Limit by', cfg.dataLimitedBy || '', [{ value: '', label: 'All data' }], function (val) {
         chartInstance.updateConfig({ dataLimitedBy: val || null });
       });
@@ -300,20 +325,23 @@ var ChartWrapper = (function () {
       yBar.className = 'sl-y-axis-bar';
 
       if (isScatter) {
-        yBar.appendChild(_makeSelect('Y axis', cfg.y, colOpts, function (val) {
+        yBar.appendChild(_makeAxisSelect('Y axis', function () { return chartInstance._config.y; }, chartInstance, function (val) {
           chartInstance.updateConfig({ y: val });
         }));
-      } else if (isBar || isPie) {
-        yBar.appendChild(_makeSelect('Value', cfg.value, colOpts, function (val) {
+      } else if (isPie) {
+        yBar.appendChild(_makeAxisSelect('Size by', function () { return chartInstance._config.value; }, chartInstance, function (val) {
+          chartInstance.updateConfig({ value: val });
+        }));
+      } else if (isBar) {
+        yBar.appendChild(_makeAxisSelect('Value', function () { return chartInstance._config.value; }, chartInstance, function (val) {
           chartInstance.updateConfig({ value: val });
         }));
       } else if (isLine) {
-        var curY = Array.isArray(cfg.y) ? cfg.y[0] : cfg.y;
-        yBar.appendChild(_makeSelect('Y axis', curY, colOpts, function (val) {
+        yBar.appendChild(_makeAxisSelect('Y axis', function () { var y = chartInstance._config.y; return Array.isArray(y) ? y[0] : y; }, chartInstance, function (val) {
           chartInstance.updateConfig({ y: [val] });
         }));
       } else if (isHeat) {
-        yBar.appendChild(_makeSelect('Y axis', cfg.y, colOpts, function (val) {
+        yBar.appendChild(_makeAxisSelect('Y axis', function () { return chartInstance._config.y; }, chartInstance, function (val) {
           chartInstance.updateConfig({ y: val });
         }));
       }
@@ -333,22 +361,26 @@ var ChartWrapper = (function () {
       xBar.className = 'sl-x-axis-bar';
 
       if (isScatter || isLine) {
-        xBar.appendChild(_makeSelect('X axis', cfg.x, colOpts, function (val) {
+        xBar.appendChild(_makeAxisSelect('X axis', function () { return chartInstance._config.x; }, chartInstance, function (val) {
           chartInstance.updateConfig({ x: val });
         }));
-      } else if (isBar || isPie) {
-        xBar.appendChild(_makeSelect('Category', cfg.category, colOpts, function (val) {
+      } else if (isPie) {
+        xBar.appendChild(_makeAxisSelect('Slice by', function () { return chartInstance._config.category; }, chartInstance, function (val) {
+          chartInstance.updateConfig({ category: val });
+        }));
+      } else if (isBar) {
+        xBar.appendChild(_makeAxisSelect('Category', function () { return chartInstance._config.category; }, chartInstance, function (val) {
           chartInstance.updateConfig({ category: val });
         }));
       } else if (isHeat) {
-        xBar.appendChild(_makeSelect('X axis', cfg.x, colOpts, function (val) {
+        xBar.appendChild(_makeAxisSelect('X axis', function () { return chartInstance._config.x; }, chartInstance, function (val) {
           chartInstance.updateConfig({ x: val });
         }));
         var lbl = document.createElement('span');
         lbl.className = 'sl-axis-label';
         lbl.textContent = 'Value:';
         xBar.appendChild(lbl);
-        xBar.appendChild(_makeSelect('Value', cfg.value, colOpts, function (val) {
+        xBar.appendChild(_makeAxisSelect('Value', function () { return chartInstance._config.value; }, chartInstance, function (val) {
           chartInstance.updateConfig({ value: val });
         }));
       }
