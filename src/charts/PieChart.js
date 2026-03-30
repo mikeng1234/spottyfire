@@ -48,7 +48,7 @@ class PieChart extends BaseChart {
       groupRows[key].push(r.__rowIndex);
     });
 
-    var labels = Object.keys(groups);
+    var labels = cfg._sortOrder ? cfg._sortOrder.filter(function (c) { return groups[c]; }) : Object.keys(groups);
     var values = labels.map(function (k) {
       var arr = groups[k];
       if (agg === 'sum') return arr.reduce(function (a, b) { return a + b; }, 0);
@@ -78,7 +78,12 @@ class PieChart extends BaseChart {
         line: { color: theme.panelBg, width: 2 },
       },
       hole: cfg.hole != null ? cfg.hole : 0.45,
-      textinfo: cfg.showPercent !== false ? 'percent+label' : 'label',
+      textinfo: (function () {
+        var parts = ['label'];
+        if (cfg.showPercent !== false) parts.push('percent');
+        if (cfg.showValues) parts.push('value');
+        return parts.join('+');
+      })(),
       textfont: { size: 11, color: theme.textPrimary },
       hoverinfo: 'label+value+percent',
       customdata: labels.map(function (k) { return groupRows[k]; }),

@@ -110,49 +110,124 @@ class DataTable extends BaseChart {
         row.appendChild(td);
       });
 
-      // Click to mark
-      row.addEventListener('click', function (e) {
-        var idx = r.__rowIndex;
-        if (e.shiftKey) mm.addToMarking([idx], self._id);
-        else if (e.ctrlKey) mm.toggleMarking([idx], self._id);
-        else mm.setMarking([idx], self._id);
-      });
+      // Store row index on the element for drag selection
+      row._rowIndex = r.__rowIndex;
 
       tbody.appendChild(row);
     });
     table.appendChild(tbody);
     wrap.appendChild(table);
+
+    // Drag-to-select rows
+    var _dragging = false;
+    var _dragIndices = [];
+    var _startIdx = null;
+    var _dragMode = 'replace'; // 'replace' or 'add'
+
+    tbody.addEventListener('mousedown', function (e) {
+      var row = e.target.closest('tr');
+      if (!row || row._rowIndex == null) return;
+      e.preventDefault();
+      _dragging = true;
+      self._isDragging = true;
+      _startIdx = row._rowIndex;
+      _dragIndices = [row._rowIndex];
+
+      if (e.ctrlKey || e.metaKey) {
+        // Ctrl+click: add this row to existing marking, then drag extends from here
+        mm.addToMarking([row._rowIndex], self._id);
+        _dragMode = 'add';
+      } else if (e.shiftKey) {
+        mm.addToMarking([row._rowIndex], self._id);
+        _dragMode = 'add';
+      } else {
+        mm.setMarking([row._rowIndex], self._id);
+        _dragMode = 'replace';
+      }
+    });
+
+    tbody.addEventListener('mouseover', function (e) {
+      if (!_dragging) return;
+      var row = e.target.closest('tr');
+      if (!row || row._rowIndex == null) return;
+
+      // Collect indices of all visible rows between start and current
+      var allRows = Array.from(tbody.querySelectorAll('tr'));
+      var startPos = -1, endPos = -1;
+      allRows.forEach(function (r, i) {
+        if (r._rowIndex === _startIdx) startPos = i;
+        if (r._rowIndex === row._rowIndex) endPos = i;
+      });
+
+      if (startPos < 0 || endPos < 0) return;
+      var from = Math.min(startPos, endPos);
+      var to = Math.max(startPos, endPos);
+
+      _dragIndices = [];
+      for (var i = from; i <= to; i++) {
+        if (allRows[i] && allRows[i]._rowIndex != null) {
+          _dragIndices.push(allRows[i]._rowIndex);
+        }
+      }
+
+      if (_dragMode === 'add') {
+        mm.addToMarking(_dragIndices, self._id);
+      } else {
+        mm.setMarking(_dragIndices, self._id);
+      }
+    });
+
+    document.addEventListener('mouseup', function () {
+      if (_dragging) {
+        _dragging = false;
+        self._isDragging = false;
+        // Do a final refresh to sync everything
+        self.refresh();
+      }
+    });
     div.appendChild(wrap);
 
-    // Pager
-    if (totalPages > 1) {
-      var pager = document.createElement('div');
-      pager.className = 'sl-table-pager';
+    // Pager — always show
+    var pager = document.createElement('div');
+    pager.className = 'sl-table-pager';
 
-      var info = document.createElement('span');
-      info.textContent = 'Showing ' + (start + 1) + '-' + Math.min(start + pageSize, rows.length) + ' of ' + rows.length;
-      pager.appendChild(info);
+    var info = document.createElement('span');
+    info.textContent = 'Showing ' + (start + 1) + '-' + Math.min(start + pageSize, rows.length) + ' of ' + rows.length;
+    pager.appendChild(info);
 
-      var btns = document.createElement('div');
-      btns.style.display = 'flex';
-      btns.style.gap = '4px';
+    // Nav buttons
+    var btns = document.createElement('div');
+    btns.style.cssText = 'display:flex;gap:4px;';
 
-      var prev = document.createElement('button');
-      prev.textContent = '\u25C0 Prev';
-      prev.disabled = this._page === 0;
-      prev.addEventListener('click', function () { self._page--; self.refresh(); });
+    var prev = document.createElement('button');
+    prev.textContent = '\u25C0 Prev';
+    prev.disabled = this._page === 0;
+    prev.addEventListener('click', function () { self._page--; self.refresh(); });
 
-      var next = document.createElement('button');
-      next.textContent = 'Next \u25B6';
-      next.disabled = this._page >= totalPages - 1;
-      next.addEventListener('click', function () { self._page++; self.refresh(); });
+    var next = document.createElement('button');
+    next.textContent = 'Next \u25B6';
+    next.disabled = this._page >= totalPages - 1;
+    next.addEventListener('click', function () { self._page++; self.refresh(); });
 
-      btns.appendChild(prev);
-      btns.appendChild(next);
-      pager.appendChild(btns);
-      div.appendChild(pager);
-    }
+    btns.appendChild(prev);
+    btns.appendChild(next);
+    pager.appendChild(btns);
+    div.appendChild(pager);
   }
 
-  _onMarkingChanged() { this.refresh(); }
+  _onMarkingChanged() {
+    // Don't full-refresh during drag selection (would destroy DOM)
+    if (this._isDragging) {
+      // Just update row highlights without rebuilding
+      var mm = this._mm;
+      var rows = this._getPlotDiv().querySelectorAll('tbody tr');
+      rows.forEach(function (row) {
+        if (row._rowIndex != null) {
+          row.classList.toggle('sl-row-marked', mm.isMarked(row._rowIndex));
+        }
+      });
+      return;
+    }
+    this.refresh();
+  }
 }

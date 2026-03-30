@@ -50,10 +50,21 @@ class BarChart extends BaseChart {
       return arr.reduce(function (a, b) { return a + b; }, 0);
     }
 
-    // Get unique categories
-    var catSet = {};
-    rows.forEach(function (r) { catSet[String(r[cat] || 'Unknown')] = true; });
-    var categories = Object.keys(catSet);
+    // Get unique categories (respect sort order if set)
+    // If category is "None" or empty, show single bar with total
+    if (!cat || cat === 'None') {
+      cat = null;
+      var categories = ['All Data (' + rows.length + ' rows)'];
+      var catSet = {};
+      catSet[categories[0]] = true;
+      // Override: put all rows under one category
+      rows.forEach(function (r) { r.__tempCat = categories[0]; });
+      cat = '__tempCat';
+    } else {
+      var catSet = {};
+      rows.forEach(function (r) { catSet[String(r[cat] || 'Unknown')] = true; });
+      var categories = cfg._sortOrder ? cfg._sortOrder.filter(function (c) { return catSet[c]; }) : Object.keys(catSet);
+    }
 
     if (colorBy && colorBy !== cat) {
       // ── Stacked bar: one trace per colorBy value ──
@@ -195,6 +206,7 @@ class BarChart extends BaseChart {
         var valCol = cfg.value;
         trace.text = values.map(function (v) { return ds.formatValue(v, valCol); });
         trace.textposition = 'outside';
+        trace.cliponaxis = false;
         trace.textfont = { size: 11, color: theme.textSecondary };
       }
       traces = [trace];

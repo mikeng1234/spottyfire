@@ -18,7 +18,8 @@ var ChartWrapper = (function () {
   }
 
   // Helper: axis dropdown that refreshes options on focus
-  function _makeAxisSelect(label, getVal, chartInst, onChange) {
+  // colFilter: 'numeric', 'string', 'category', or null (all)
+  function _makeAxisSelect(label, getVal, chartInst, onChange, colFilter, includeNone) {
     var select = document.createElement('select');
     select.title = label;
     select.className = 'sl-axis-select';
@@ -26,12 +27,43 @@ var ChartWrapper = (function () {
     function _populate() {
       var curVal = getVal();
       select.innerHTML = '';
-      var cols = chartInst._ds.getColumnNames();
-      cols.forEach(function (c) {
+      var ds = chartInst._ds;
+      var allCols = ds.getColumns().filter(function (c) { return c.name !== '__rowIndex'; });
+
+      var filtered = allCols;
+      if (colFilter === 'numeric') {
+        filtered = allCols.filter(function (c) { return c.type === 'number'; });
+      } else if (colFilter === 'string') {
+        filtered = allCols.filter(function (c) { return c.type !== 'number'; });
+      } else if (colFilter === 'category') {
+        // String columns with <= 30 unique values
+        filtered = allCols.filter(function (c) {
+          if (c.type === 'number') return false;
+          return ds.getColumnValues(c.name).length <= 30;
+        });
+        if (filtered.length === 0) filtered = allCols.filter(function (c) { return c.type !== 'number'; });
+      }
+
+      // Always include current value even if it doesn't match filter
+      var hasCurrentVal = filtered.some(function (c) { return c.name === curVal; });
+      if (curVal && !hasCurrentVal) {
+        var curCol = allCols.find(function (c) { return c.name === curVal; });
+        if (curCol) filtered.unshift(curCol);
+      }
+
+      if (includeNone) {
+        var noneEl = document.createElement('option');
+        noneEl.value = 'None';
+        noneEl.textContent = 'None (show total)';
+        if (curVal === 'None' || !curVal) noneEl.selected = true;
+        select.appendChild(noneEl);
+      }
+
+      filtered.forEach(function (c) {
         var el = document.createElement('option');
-        el.value = c;
-        el.textContent = c;
-        if (c === curVal) el.selected = true;
+        el.value = c.name;
+        el.textContent = c.name;
+        if (c.name === curVal) el.selected = true;
         select.appendChild(el);
       });
     }
@@ -72,6 +104,88 @@ var ChartWrapper = (function () {
     document.head.appendChild(s);
   }
 
+  // Transform a chart to a different type
+  function _transformChart(oldChart, container, newType) {
+    var ds = oldChart._ds;
+    var oldCfg = oldChart._config;
+
+    // Keep container in DOM — prevent destroy() from removing it
+    var parentGrid = container.parentNode;
+    var nextSibling = container.nextSibling;
+
+    // Get available columns
+    var cols = ds.getColumns().filter(function (c) { return c.name !== '__rowIndex'; });
+    var numCols = cols.filter(function (c) { return c.type === 'number'; });
+    var strCols = cols.filter(function (c) { return c.type !== 'number'; });
+    var catCols = strCols.filter(function (c) { return ds.getColumnValues(c.name).length <= 30; });
+    if (catCols.length === 0) catCols = strCols;
+
+    // Try to reuse existing axis values, fall back to best match
+    var bestNum = oldCfg.value || oldCfg.y || (numCols[0] ? numCols[0].name : cols[0].name);
+    var bestNum2 = oldCfg.x || (numCols[1] ? numCols[1].name : bestNum);
+    var bestCat = oldCfg.category || oldCfg.x || (catCols[0] ? catCols[0].name : cols[0].name);
+    var bestCat2 = catCols[1] ? catCols[1].name : bestCat;
+    var bestColor = oldCfg.colorBy || oldCfg.groupBy || null;
+
+    // Validate: make sure numeric picks are actually numeric
+    if (!numCols.some(function (c) { return c.name === bestNum; })) bestNum = numCols[0] ? numCols[0].name : cols[0].name;
+    if (!numCols.some(function (c) { return c.name === bestNum2; })) bestNum2 = numCols[1] ? numCols[1].name : bestNum;
+    if (!catCols.some(function (c) { return c.name === bestCat; }) && !strCols.some(function (c) { return c.name === bestCat; })) bestCat = catCols[0] ? catCols[0].name : cols[0].name;
+
+    // Destroy old chart (this may remove the container from DOM)
+    oldChart.destroy();
+
+    // Re-insert container if it was removed by destroy()
+    if (!container.parentNode && parentGrid) {
+      if (nextSibling) parentGrid.insertBefore(container, nextSibling);
+      else parentGrid.appendChild(container);
+    }
+    container.innerHTML = ''; // clear any leftover content
+
+    // Create new chart
+    switch (newType) {
+      case 'bar':
+        SpottyFire.BarChart(container, ds, {
+          category: bestCat, value: bestNum, aggregation: 'avg', showValues: true,
+          colorBy: bestColor, title: 'Avg ' + bestNum + ' by ' + bestCat,
+        });
+        break;
+      case 'scatter':
+        SpottyFire.ScatterPlot(container, ds, {
+          x: bestNum2, y: bestNum, colorBy: bestColor || (catCols[0] ? catCols[0].name : null),
+          pointSize: 7, title: bestNum2 + ' vs ' + bestNum,
+        });
+        break;
+      case 'line':
+        SpottyFire.LineChart(container, ds, {
+          x: bestCat, y: [bestNum], groupBy: bestColor, smooth: true,
+          title: bestNum + ' by ' + bestCat,
+        });
+        break;
+      case 'pie':
+        SpottyFire.PieChart(container, ds, {
+          category: bestCat, value: bestNum, aggregation: 'sum',
+          hole: 0.45, showPercent: true, title: bestNum + ' by ' + bestCat,
+        });
+        break;
+      case 'heatmap':
+        SpottyFire.HeatMap(container, ds, {
+          x: bestCat, y: bestCat2, value: bestNum, aggregation: 'avg', showValues: true,
+          title: 'Avg ' + bestNum + ': ' + bestCat + ' x ' + bestCat2,
+        });
+        break;
+      case 'table':
+        SpottyFire.DataTable(container, ds, {
+          columns: cols.map(function (c) { return c.name; }).slice(0, 10),
+          pageSize: 20, title: 'Data Table',
+        });
+        break;
+    }
+
+    // Recalculate layout
+    if (typeof window.recalcLayout === 'function') window.recalcLayout();
+  }
+
   // Build the collapsible properties sidebar
   function _buildColorSidebar(chartInstance, colorByKey, colOptsWithNone) {
     var cfg = chartInstance._config;
@@ -104,13 +218,14 @@ var ChartWrapper = (function () {
     var body = document.createElement('div');
     body.className = 'sl-color-sidebar-body';
 
-    // Column selector dropdown
+    // Column selector dropdown — "Line by" for LineChart, "Color by" for others
+    var colorLabel = (chartInstance instanceof LineChart) ? 'Line by' : 'Color by';
     var label = document.createElement('div');
     label.className = 'sl-color-label';
-    label.textContent = 'Color by';
+    label.textContent = colorLabel;
     body.appendChild(label);
 
-    var select = _makeSelect('Color by', cfg[colorByKey] || '', colOptsWithNone, function (val) {
+    var select = _makeSelect(colorLabel, cfg[colorByKey] || '', colOptsWithNone, function (val) {
       var update = {};
       update[colorByKey] = val || null;
       chartInstance.updateConfig(update);
@@ -172,6 +287,84 @@ var ChartWrapper = (function () {
 
     // Update legend on theme change
     ThemeManager.on(function () { _renderLegend(); });
+
+    // ── Marker By section (Line chart only) ──
+    if (chartInstance instanceof LineChart) {
+      var markerLabel = document.createElement('div');
+      markerLabel.className = 'sl-color-label';
+      markerLabel.style.marginTop = '10px';
+      markerLabel.style.borderTop = '1px solid var(--sl-panel-border)';
+      markerLabel.style.paddingTop = '8px';
+      markerLabel.textContent = 'Marker by';
+      body.appendChild(markerLabel);
+
+      var markerSelect = document.createElement('select');
+      markerSelect.className = 'sl-axis-select';
+      markerSelect.style.width = '100%';
+      markerSelect.style.marginBottom = '4px';
+
+      function _populateMarkerBy() {
+        var curVal = chartInstance._config.markerBy || '';
+        markerSelect.innerHTML = '';
+        var noneOpt = document.createElement('option');
+        noneOpt.value = '';
+        noneOpt.textContent = 'None';
+        markerSelect.appendChild(noneOpt);
+        var allCols = ds.getColumns().filter(function (c) { return c.name !== '__rowIndex' && c.type !== 'number'; });
+        allCols.forEach(function (c) {
+          if (ds.getColumnValues(c.name).length > 20) return;
+          var opt = document.createElement('option');
+          opt.value = c.name;
+          opt.textContent = c.name;
+          if (c.name === curVal) opt.selected = true;
+          markerSelect.appendChild(opt);
+        });
+      }
+      _populateMarkerBy();
+      markerSelect.addEventListener('focus', _populateMarkerBy);
+      markerSelect.addEventListener('change', function () {
+        chartInstance.updateConfig({ markerBy: markerSelect.value || null });
+      });
+      body.appendChild(markerSelect);
+
+      // Marker legend
+      var markerLegend = document.createElement('div');
+      function _renderMarkerLegend() {
+        markerLegend.innerHTML = '';
+        var mb = chartInstance._config.markerBy;
+        if (!mb) return;
+        var symbols = ['\u25CF', '\u25A0', '\u25C6', '\u2716', '\u2573', '\u25B2', '\u25BC', '\u2605', '\u2B22', '\u2B1F'];
+        var vals = ds.getColumnValues(mb).slice(0, 10);
+        vals.forEach(function (v, i) {
+          var item = document.createElement('div');
+          item.className = 'sl-color-item';
+          var sym = document.createElement('span');
+          sym.style.cssText = 'width:14px;text-align:center;font-size:12px;flex-shrink:0;';
+          sym.textContent = symbols[i % symbols.length];
+          item.appendChild(sym);
+          var txt = document.createElement('span');
+          txt.textContent = v;
+          item.appendChild(txt);
+          markerLegend.appendChild(item);
+        });
+      }
+      _renderMarkerLegend();
+      body.appendChild(markerLegend);
+
+      // Show markers toggle
+      var showMarkersLabel = document.createElement('label');
+      showMarkersLabel.className = 'sl-color-item';
+      showMarkersLabel.style.marginTop = '6px';
+      var smCb = document.createElement('input');
+      smCb.type = 'checkbox';
+      smCb.checked = !!(chartInstance._config.showMarkers || chartInstance._config.markerBy);
+      smCb.addEventListener('change', function () {
+        chartInstance.updateConfig({ showMarkers: smCb.checked });
+      });
+      showMarkersLabel.appendChild(smCb);
+      showMarkersLabel.appendChild(document.createTextNode(' Show markers'));
+      body.appendChild(showMarkersLabel);
+    }
 
     // ── Data Limited By section ──
     var limitLabel = document.createElement('div');
@@ -255,9 +448,49 @@ var ChartWrapper = (function () {
     var header = document.createElement('div');
     header.className = 'sl-panel-header';
 
+    // Chart type switcher
+    var titleWrap = document.createElement('div');
+    titleWrap.style.cssText = 'display:flex;align-items:center;gap:6px;min-width:0;flex:1;';
+
+    if (chartInstance && chartInstance._ds) {
+      var typeSelect = document.createElement('select');
+      typeSelect.className = 'sl-axis-select';
+      typeSelect.title = 'Change chart type';
+      typeSelect.style.cssText += 'font-size:13px;padding:2px 4px;flex-shrink:0;';
+      var types = [
+        { value: 'bar', label: '\uD83D\uDCCA', name: 'Bar' },
+        { value: 'scatter', label: '\u2022\u2022', name: 'Scatter' },
+        { value: 'line', label: '\uD83D\uDCC8', name: 'Line' },
+        { value: 'pie', label: '\u25D4', name: 'Pie' },
+        { value: 'heatmap', label: '\u2593', name: 'Heatmap' },
+        { value: 'table', label: '\u2630', name: 'Table' },
+      ];
+      var currentType = (chartInstance instanceof BarChart) ? 'bar' :
+        (chartInstance instanceof ScatterPlot) ? 'scatter' :
+        (chartInstance instanceof LineChart) ? 'line' :
+        (chartInstance instanceof PieChart) ? 'pie' :
+        (chartInstance instanceof HeatMap) ? 'heatmap' :
+        (chartInstance instanceof DataTable) ? 'table' : '';
+
+      types.forEach(function (t) {
+        var opt = document.createElement('option');
+        opt.value = t.value;
+        opt.textContent = t.label + ' ' + t.name;
+        if (t.value === currentType) opt.selected = true;
+        typeSelect.appendChild(opt);
+      });
+
+      typeSelect.addEventListener('change', function () {
+        _transformChart(chartInstance, container, typeSelect.value);
+      });
+      titleWrap.appendChild(typeSelect);
+    }
+
     var titleEl = document.createElement('span');
     titleEl.textContent = title || '';
-    header.appendChild(titleEl);
+    titleEl.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+    titleWrap.appendChild(titleEl);
+    header.appendChild(titleWrap);
 
     var actions = document.createElement('div');
     actions.className = 'sl-panel-header-actions';
@@ -314,6 +547,24 @@ var ChartWrapper = (function () {
       actions.appendChild(limitHeaderSelect);
     }
 
+    // Page size selector — only for DataTable
+    if (chartInstance instanceof DataTable) {
+      var pgSelect = _makeSelect('Show', String(cfg.pageSize || 20), [
+        { value: '10', label: '10' },
+        { value: '20', label: '20' },
+        { value: '50', label: '50' },
+        { value: '100', label: '100' },
+        { value: '200', label: '200' },
+        { value: '500', label: '500' },
+        { value: '1000', label: '1000' },
+      ], function (val) {
+        chartInstance._config.pageSize = +val;
+        chartInstance._page = 0;
+        chartInstance.refresh();
+      });
+      actions.appendChild(pgSelect);
+    }
+
     // Clear marking button
     var clearBtn = document.createElement('button');
     clearBtn.textContent = '\u2715 Clear';
@@ -325,12 +576,12 @@ var ChartWrapper = (function () {
 
     // Fullscreen toggle
     var fsBtn = document.createElement('button');
-    fsBtn.textContent = '\u26F6';
+    fsBtn.innerHTML = '\u26F6'; // ⛶ expand
     fsBtn.title = 'Fullscreen';
     var _preFsHeight = null;
     fsBtn.addEventListener('click', function () {
       var isFs = panel.classList.toggle('sl-fullscreen');
-      fsBtn.textContent = isFs ? '\u2716' : '\u26F6';
+      fsBtn.innerHTML = isFs ? '\u2199' : '\u26F6'; // ↙ compress / ⛶ expand
       fsBtn.title = isFs ? 'Exit fullscreen' : 'Fullscreen';
       document.body.style.overflow = isFs ? 'hidden' : '';
       if (isFs) {
@@ -401,6 +652,18 @@ var ChartWrapper = (function () {
       panel._cogMenu = cogWrap;
     }
 
+    // Close (remove) chart button — always last
+    var closeBtn = document.createElement('button');
+    closeBtn.textContent = '\u2715';
+    closeBtn.title = 'Close this chart';
+    closeBtn.style.cssText += 'color:var(--sl-text-muted);';
+    closeBtn.addEventListener('click', function () {
+      if (chartInstance && chartInstance.destroy) {
+        chartInstance.destroy();
+      }
+    });
+    actions.appendChild(closeBtn);
+
     header.appendChild(actions);
     panel.appendChild(header);
 
@@ -416,23 +679,23 @@ var ChartWrapper = (function () {
       if (isScatter) {
         yBar.appendChild(_makeAxisSelect('Y axis', function () { return chartInstance._config.y; }, chartInstance, function (val) {
           chartInstance.updateConfig({ y: val });
-        }));
+        }, 'numeric'));
       } else if (isPie) {
         yBar.appendChild(_makeAxisSelect('Size by', function () { return chartInstance._config.value; }, chartInstance, function (val) {
           chartInstance.updateConfig({ value: val });
-        }));
+        }, 'numeric'));
       } else if (isBar) {
         yBar.appendChild(_makeAxisSelect('Value', function () { return chartInstance._config.value; }, chartInstance, function (val) {
           chartInstance.updateConfig({ value: val });
-        }));
+        }, 'numeric'));
       } else if (isLine) {
         yBar.appendChild(_makeAxisSelect('Y axis', function () { var y = chartInstance._config.y; return Array.isArray(y) ? y[0] : y; }, chartInstance, function (val) {
           chartInstance.updateConfig({ y: [val] });
-        }));
+        }, 'numeric'));
       } else if (isHeat) {
         yBar.appendChild(_makeAxisSelect('Y axis', function () { return chartInstance._config.y; }, chartInstance, function (val) {
           chartInstance.updateConfig({ y: val });
-        }));
+        }, 'category'));
       }
 
       layout.appendChild(yBar);
@@ -449,29 +712,33 @@ var ChartWrapper = (function () {
       var xBar = document.createElement('div');
       xBar.className = 'sl-x-axis-bar';
 
-      if (isScatter || isLine) {
+      if (isScatter) {
         xBar.appendChild(_makeAxisSelect('X axis', function () { return chartInstance._config.x; }, chartInstance, function (val) {
           chartInstance.updateConfig({ x: val });
-        }));
+        }, 'numeric'));
+      } else if (isLine) {
+        xBar.appendChild(_makeAxisSelect('X axis', function () { return chartInstance._config.x; }, chartInstance, function (val) {
+          chartInstance.updateConfig({ x: val });
+        }, null)); // line X can be date/string/numeric
       } else if (isPie) {
         xBar.appendChild(_makeAxisSelect('Slice by', function () { return chartInstance._config.category; }, chartInstance, function (val) {
           chartInstance.updateConfig({ category: val });
-        }));
+        }, 'category'));
       } else if (isBar) {
         xBar.appendChild(_makeAxisSelect('Category', function () { return chartInstance._config.category; }, chartInstance, function (val) {
-          chartInstance.updateConfig({ category: val });
-        }));
+          chartInstance.updateConfig({ category: val === 'None' ? null : val });
+        }, null, true));
       } else if (isHeat) {
         xBar.appendChild(_makeAxisSelect('X axis', function () { return chartInstance._config.x; }, chartInstance, function (val) {
           chartInstance.updateConfig({ x: val });
-        }));
+        }, 'category'));
         var lbl = document.createElement('span');
         lbl.className = 'sl-axis-label';
         lbl.textContent = 'Value:';
         xBar.appendChild(lbl);
         xBar.appendChild(_makeAxisSelect('Value', function () { return chartInstance._config.value; }, chartInstance, function (val) {
           chartInstance.updateConfig({ value: val });
-        }));
+        }, 'numeric'));
       }
 
       col.appendChild(xBar);
@@ -514,6 +781,27 @@ var ChartWrapper = (function () {
             Plotly.relayout(plotDiv, { 'yaxis.showticklabels': on, 'yaxis.title.text': on ? (chartInstance._config.y || chartInstance._config.value || '') : '' });
           }
         });
+
+        // Pie chart specific toggles
+        if (isPie) {
+          _addToggle('Show percentage', cfg.showPercent !== false, function (on) {
+            chartInstance._config.showPercent = on;
+            chartInstance.refresh();
+          });
+
+          _addToggle('Show values', false, function (on) {
+            chartInstance._config.showValues = on;
+            chartInstance.refresh();
+          });
+        }
+
+        // Bar chart specific toggle
+        if (isBar) {
+          _addToggle('Show values', cfg.showValues || false, function (on) {
+            chartInstance._config.showValues = on;
+            chartInstance.refresh();
+          });
+        }
       }
 
     } else {

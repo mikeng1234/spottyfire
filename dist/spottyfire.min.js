@@ -239,7 +239,7 @@ const ThemeManager = (function () {
         bgcolor: 'transparent', font: { size: 11, color: t.textSecondary },
         orientation: 'h', y: -0.15, x: 0.5, xanchor: 'center',
       },
-      margin: { t: 52, r: 24, b: 56, l: 56 },
+      margin: { t: 64, r: 24, b: 56, l: 56 },
       hoverlabel: {
         bgcolor: t.panelBg, bordercolor: t.panelBorder,
         font: { size: 12, color: t.textPrimary },
@@ -279,7 +279,12 @@ const ThemeManager = (function () {
       '--sl-grid:' + t.gridLines + ';' +
       '--sl-transition:' + t.transition + ';' +
       '--sl-font:' + t.fontFamily + ';' +
-    '}body{background:var(--sl-bg);color:var(--sl-text-primary);font-family:var(--sl-font);margin:0;}';
+    '}body{background:var(--sl-bg);color:var(--sl-text-primary);font-family:var(--sl-font);margin:0;}' +
+    '*{scrollbar-width:thin;scrollbar-color:var(--sl-panel-border) transparent;}' +
+    '*::-webkit-scrollbar{width:6px;height:6px;}' +
+    '*::-webkit-scrollbar-track{background:transparent;}' +
+    '*::-webkit-scrollbar-thumb{background:var(--sl-panel-border);border-radius:3px;}' +
+    '*::-webkit-scrollbar-thumb:hover{background:var(--sl-accent);}';
 
     // Inject base component styles once
     if (!document.getElementById('sl-base-css')) {
@@ -331,13 +336,13 @@ const ThemeManager = (function () {
         '.sl-table tr.sl-striped td{background:rgba(128,128,128,0.03);}' +
         '.sl-table tr.sl-row-marked td{background:color-mix(in srgb,var(--sl-marking) 12%,transparent);border-left:3px solid var(--sl-marking);}' +
         '.sl-table tr:hover td{background:rgba(128,128,128,0.07);}' +
-        '.sl-table tr{cursor:pointer;transition:background var(--sl-transition) ease;}' +
+        '.sl-table tr{cursor:pointer;transition:background var(--sl-transition) ease;user-select:none;}' +
         '.sl-table-pager{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;font-size:12px;color:var(--sl-text-secondary);border-top:1px solid var(--sl-panel-border);}' +
         '.sl-table-pager button{background:none;border:1px solid var(--sl-panel-border);border-radius:6px;color:var(--sl-text-secondary);cursor:pointer;padding:4px 10px;font-size:11px;}' +
         '.sl-table-pager button:hover:not(:disabled){color:var(--sl-text-primary);border-color:var(--sl-accent);}' +
         '.sl-table-pager button:disabled{opacity:0.3;cursor:default;}' +
         '.sl-filter-panel{background:var(--sl-panel-bg);border:1px solid var(--sl-panel-border);border-radius:12px;box-shadow:var(--sl-panel-shadow);padding:16px;overflow-y:auto;font-size:13px;color:var(--sl-text-primary);}' +
-        '.sl-filter-section{margin-bottom:16px;}' +
+        '.sl-filter-section{margin-bottom:12px;border-bottom:1px solid var(--sl-panel-border);padding-bottom:12px;max-height:180px;overflow-y:auto;}' +
         '.sl-filter-section label{display:block;font-size:12px;font-weight:600;color:var(--sl-text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;}' +
         '.sl-filter-check{display:flex;align-items:center;gap:6px;padding:3px 0;cursor:pointer;font-size:13px;color:var(--sl-text-primary);}' +
         '.sl-filter-check input{accent-color:var(--sl-accent);}' +
@@ -371,6 +376,14 @@ const ThemeManager = (function () {
         '.sl-colpanel-select{background:var(--sl-panel-bg);border:1px solid var(--sl-panel-border);border-radius:5px;color:var(--sl-text-secondary);padding:2px 4px;font-size:10px;cursor:pointer;font-family:var(--sl-font);outline:none;transition:border-color var(--sl-transition) ease;}' +
         '.sl-colpanel-select:hover,.sl-colpanel-select:focus{border-color:var(--sl-accent);color:var(--sl-text-primary);}' +
         '.sl-colpanel-preview{font-size:11px;color:var(--sl-accent);font-family:monospace;padding:2px 0;}' +
+        '.sl-viz-panel{padding:4px 0;}' +
+        '.sl-viz-title{font-size:14px;font-weight:700;padding:8px 12px;color:var(--sl-text-primary);}' +
+        '.sl-viz-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:0 12px 12px;}' +
+        '.sl-viz-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 4px;border:1px solid var(--sl-panel-border);border-radius:8px;cursor:pointer;transition:all 200ms ease;user-select:none;}' +
+        '.sl-viz-tile:hover{border-color:var(--sl-accent);background:color-mix(in srgb,var(--sl-accent) 8%,transparent);transform:translateY(-1px);box-shadow:0 2px 8px rgba(0,0,0,0.2);}' +
+        '.sl-viz-icon{font-size:20px;margin-bottom:4px;opacity:0.7;}' +
+        '.sl-viz-tile:hover .sl-viz-icon{opacity:1;}' +
+        '.sl-viz-label{font-size:10px;font-weight:600;color:var(--sl-text-secondary);text-transform:uppercase;letter-spacing:0.5px;}' +
         '.sl-dataset-panel{padding:4px 0;}' +
         '.sl-dataset-title{font-size:14px;font-weight:700;padding:8px 12px;color:var(--sl-text-primary);}' +
         '.sl-dataset-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;cursor:pointer;border-left:3px solid transparent;transition:all var(--sl-transition) ease;}' +
@@ -1379,9 +1392,19 @@ class BaseChart {
     this._onFilter = function () { self.refresh(); };
     this._onTheme = function () { self.refresh(); };
     this._onFormat = function () { self.refresh(); };
+    this._onDataLoaded = function () {
+      self._autoFixColumns();
+      self.refresh();
+      // Force all dropdowns to refresh their options and selected value
+      if (self._wrapper) {
+        var selects = self._wrapper.querySelectorAll('.sl-y-axis-bar select, .sl-x-axis-bar select, .sl-color-sidebar-body select');
+        selects.forEach(function (s) { s.dispatchEvent(new Event('focus')); });
+      }
+    };
 
     this._mm.on('marking-changed', this._onMarking);
     this._ds.on('filter-changed', this._onFilter);
+    this._ds.on('data-loaded', this._onDataLoaded);
 
     // Double-click empty area to clear marking (matches Plotly's reset behavior)
     // Deferred: bind after first Plotly render since .on() requires Plotly initialization
@@ -1602,6 +1625,88 @@ class BaseChart {
     return rows.map(function (r) { return self._buildTooltip(r); });
   }
 
+  // Auto-fix column references when data changes (new CSV loaded)
+  _autoFixColumns() {
+    var cols = this._ds.getColumnNames();
+    if (cols.length === 0) return;
+    var cfg = this._config;
+
+    // Find first numeric and first categorical (< 20 unique) columns
+    var rows = this._ds._rows;
+    var numCols = [];
+    var catCols = [];
+    cols.forEach(function (c) {
+      if (c === '__rowIndex') return;
+      if (rows.length > 0 && typeof rows[0][c] === 'number') {
+        numCols.push(c);
+      } else {
+        var unique = {};
+        for (var i = 0; i < Math.min(rows.length, 200); i++) {
+          if (rows[i][c] != null) unique[rows[i][c]] = true;
+        }
+        if (Object.keys(unique).length <= 20) catCols.push(c);
+      }
+    });
+
+    // Fix axes that reference columns not in the new data
+    var axisMap = {
+      x: numCols.length > 1 ? numCols[1] : numCols[0] || cols[0],
+      y: numCols[0] || cols[0],
+      category: catCols[0] || cols[0],
+      value: numCols[0] || cols[0],
+    };
+
+    var keysToCheck = ['x', 'y', 'category', 'value', 'colorBy', 'groupBy'];
+    var changed = false;
+    keysToCheck.forEach(function (key) {
+      if (cfg[key] && cols.indexOf(cfg[key]) < 0) {
+        if (key === 'colorBy' || key === 'groupBy') {
+          cfg[key] = null;
+        } else {
+          cfg[key] = axisMap[key] || cols[0];
+        }
+        changed = true;
+      }
+    });
+    // Handle y as array (LineChart)
+    if (Array.isArray(cfg.y)) {
+      cfg.y = cfg.y.map(function (c) {
+        if (cols.indexOf(c) < 0) { changed = true; return numCols[0] || cols[0]; }
+        return c;
+      });
+    }
+
+    // Fix DataTable columns array
+    if (Array.isArray(cfg.columns)) {
+      var validCols = cfg.columns.filter(function (c) { return cols.indexOf(c) >= 0; });
+      if (validCols.length === 0) {
+        // All old columns gone — use first 10 new columns
+        cfg.columns = cols.filter(function (c) { return c !== '__rowIndex'; }).slice(0, 10);
+        changed = true;
+      } else if (validCols.length < cfg.columns.length) {
+        cfg.columns = validCols;
+        changed = true;
+      }
+    }
+
+    // Auto-update title to reflect new columns
+    if (changed) {
+      var valCol = cfg.value || cfg.y || '';
+      if (Array.isArray(valCol)) valCol = valCol[0] || '';
+      var catCol = cfg.category || cfg.x || '';
+      var agg = cfg.aggregation || '';
+      if (agg) agg = agg.charAt(0).toUpperCase() + agg.slice(1) + ' ';
+      cfg.title = agg + valCol + (catCol ? ' by ' + catCol : '');
+      // Update displayed title
+      if (this._wrapper) {
+        var titleEl = this._wrapper.querySelector('.sl-panel-header span');
+        if (titleEl) titleEl.textContent = cfg.title;
+      }
+      // Update chart registry name
+      this._ds._registerChart(this);
+    }
+  }
+
   // Apply column format to a Plotly axis layout object
   _applyAxisFormat(axisLayout, colName) {
     var fmt = this._ds.getPlotlyAxisFormat(colName);
@@ -1635,6 +1740,7 @@ class BaseChart {
     this._ds._unregisterChart(this);
     this._mm.off('marking-changed', this._onMarking);
     this._ds.off('filter-changed', this._onFilter);
+    this._ds.off('data-loaded', this._onDataLoaded);
     this._ds.off('format-changed', this._onFormat);
     ThemeManager.off(this._onTheme);
     var div = this._getPlotDiv();
@@ -1642,8 +1748,37 @@ class BaseChart {
       try { Plotly.purge(div); } catch (e) {}
     }
     if (this._wrapper && this._wrapper.parentNode) {
-      this._wrapper.parentNode.removeChild(this._wrapper);
+      var parentContainer = this._wrapper.parentNode;
+      parentContainer.removeChild(this._wrapper);
+      // Remove empty container div from grid
+      if (parentContainer.children.length === 0 && parentContainer !== document.body) {
+        parentContainer.remove();
+      }
     }
+    // Recalculate layout and resize remaining charts
+    if (typeof window.recalcLayout === 'function') window.recalcLayout();
+    else BaseChart.resizeAll();
+  }
+
+  static resizeAll() {
+    // Trigger window resize event — Plotly's responsive:true hooks into this
+    // Multiple delays to ensure DOM has settled
+    [50, 200, 500].forEach(function (delay) {
+      setTimeout(function () {
+        window.dispatchEvent(new Event('resize'));
+      }, delay);
+    });
+  }
+
+  static _resizeAllLegacy() {
+    setTimeout(function () {
+      var plots = document.querySelectorAll('.sl-panel-body .js-plotly-plot');
+      plots.forEach(function (p) {
+        if (p.data) {
+          try { Plotly.Plots.resize(p); } catch (e) {}
+        }
+      });
+    }, 200);
   }
 }
 // ─── BarChart ───────────────────────────────────────────────
@@ -1698,10 +1833,21 @@ class BarChart extends BaseChart {
       return arr.reduce(function (a, b) { return a + b; }, 0);
     }
 
-    // Get unique categories
-    var catSet = {};
-    rows.forEach(function (r) { catSet[String(r[cat] || 'Unknown')] = true; });
-    var categories = Object.keys(catSet);
+    // Get unique categories (respect sort order if set)
+    // If category is "None" or empty, show single bar with total
+    if (!cat || cat === 'None') {
+      cat = null;
+      var categories = ['All Data (' + rows.length + ' rows)'];
+      var catSet = {};
+      catSet[categories[0]] = true;
+      // Override: put all rows under one category
+      rows.forEach(function (r) { r.__tempCat = categories[0]; });
+      cat = '__tempCat';
+    } else {
+      var catSet = {};
+      rows.forEach(function (r) { catSet[String(r[cat] || 'Unknown')] = true; });
+      var categories = cfg._sortOrder ? cfg._sortOrder.filter(function (c) { return catSet[c]; }) : Object.keys(catSet);
+    }
 
     if (colorBy && colorBy !== cat) {
       // ── Stacked bar: one trace per colorBy value ──
@@ -1843,6 +1989,7 @@ class BarChart extends BaseChart {
         var valCol = cfg.value;
         trace.text = values.map(function (v) { return ds.formatValue(v, valCol); });
         trace.textposition = 'outside';
+        trace.cliponaxis = false;
         trace.textfont = { size: 11, color: theme.textSecondary };
       }
       traces = [trace];
@@ -2150,15 +2297,29 @@ class LineChart extends BaseChart {
         var gRows = groups[g];
         var color = theme.palette[gi % theme.palette.length];
         yCols.forEach(function (yCol) {
+          var showM = cfg.showMarkers || cfg.markerBy;
           var tr = {
             type: 'scatter',
-            mode: 'lines' + (cfg.showMarkers ? '+markers' : ''),
+            mode: 'lines' + (showM ? '+markers' : ''),
             name: groupBy ? g : yCol,
             x: gRows.map(function (r) { return r[xCol]; }),
             y: gRows.map(function (r) { return r[yCol]; }),
             customdata: gRows.map(function (r) { return r.__rowIndex; }),
             line: { color: color, width: 2, shape: smooth ? 'spline' : 'linear' },
           };
+          // Marker By: assign different symbols per category value
+          if (cfg.markerBy) {
+            var symbols = ['circle', 'square', 'diamond', 'cross', 'x', 'triangle-up', 'triangle-down', 'star', 'hexagon', 'pentagon'];
+            var markerVals = gRows.map(function (r) { return String(r[cfg.markerBy] || ''); });
+            var uniqueVals = {};
+            markerVals.forEach(function (v) { uniqueVals[v] = true; });
+            var valList = Object.keys(uniqueVals);
+            tr.marker = {
+              symbol: markerVals.map(function (v) { return symbols[valList.indexOf(v) % symbols.length]; }),
+              size: 8,
+              color: color,
+            };
+          }
           if (showArea) { tr.fill = 'tozeroy'; tr.fillcolor = color + '20'; }
           if (hasMarking) {
             var anyMarked = gRows.some(function (r) { return mm.isMarked(r.__rowIndex); });
@@ -2170,15 +2331,28 @@ class LineChart extends BaseChart {
     } else {
       yCols.forEach(function (yCol, yi) {
         var color = theme.palette[yi % theme.palette.length];
+        var showM = cfg.showMarkers || cfg.markerBy;
         var tr = {
           type: 'scatter',
-          mode: 'lines' + (cfg.showMarkers ? '+markers' : ''),
+          mode: 'lines' + (showM ? '+markers' : ''),
           name: yCol,
           x: rows.map(function (r) { return r[xCol]; }),
           y: rows.map(function (r) { return r[yCol]; }),
           customdata: rows.map(function (r) { return r.__rowIndex; }),
           line: { color: color, width: 2, shape: smooth ? 'spline' : 'linear' },
         };
+        if (cfg.markerBy) {
+          var symbols = ['circle', 'square', 'diamond', 'cross', 'x', 'triangle-up', 'triangle-down', 'star', 'hexagon', 'pentagon'];
+          var markerVals = rows.map(function (r) { return String(r[cfg.markerBy] || ''); });
+          var uniqueVals = {};
+          markerVals.forEach(function (v) { uniqueVals[v] = true; });
+          var valList = Object.keys(uniqueVals);
+          tr.marker = {
+            symbol: markerVals.map(function (v) { return symbols[valList.indexOf(v) % symbols.length]; }),
+            size: 8,
+            color: color,
+          };
+        }
         if (showArea) { tr.fill = 'tozeroy'; tr.fillcolor = color + '20'; }
         traces.push(tr);
       });
@@ -2266,7 +2440,7 @@ class PieChart extends BaseChart {
       groupRows[key].push(r.__rowIndex);
     });
 
-    var labels = Object.keys(groups);
+    var labels = cfg._sortOrder ? cfg._sortOrder.filter(function (c) { return groups[c]; }) : Object.keys(groups);
     var values = labels.map(function (k) {
       var arr = groups[k];
       if (agg === 'sum') return arr.reduce(function (a, b) { return a + b; }, 0);
@@ -2296,7 +2470,12 @@ class PieChart extends BaseChart {
         line: { color: theme.panelBg, width: 2 },
       },
       hole: cfg.hole != null ? cfg.hole : 0.45,
-      textinfo: cfg.showPercent !== false ? 'percent+label' : 'label',
+      textinfo: (function () {
+        var parts = ['label'];
+        if (cfg.showPercent !== false) parts.push('percent');
+        if (cfg.showValues) parts.push('value');
+        return parts.join('+');
+      })(),
       textfont: { size: 11, color: theme.textPrimary },
       hoverinfo: 'label+value+percent',
       customdata: labels.map(function (k) { return groupRows[k]; }),
@@ -2622,52 +2801,349 @@ class DataTable extends BaseChart {
         row.appendChild(td);
       });
 
-      // Click to mark
-      row.addEventListener('click', function (e) {
-        var idx = r.__rowIndex;
-        if (e.shiftKey) mm.addToMarking([idx], self._id);
-        else if (e.ctrlKey) mm.toggleMarking([idx], self._id);
-        else mm.setMarking([idx], self._id);
-      });
+      // Store row index on the element for drag selection
+      row._rowIndex = r.__rowIndex;
 
       tbody.appendChild(row);
     });
     table.appendChild(tbody);
     wrap.appendChild(table);
+
+    // Drag-to-select rows
+    var _dragging = false;
+    var _dragIndices = [];
+    var _startIdx = null;
+    var _dragMode = 'replace'; // 'replace' or 'add'
+
+    tbody.addEventListener('mousedown', function (e) {
+      var row = e.target.closest('tr');
+      if (!row || row._rowIndex == null) return;
+      e.preventDefault();
+      _dragging = true;
+      self._isDragging = true;
+      _startIdx = row._rowIndex;
+      _dragIndices = [row._rowIndex];
+
+      if (e.ctrlKey || e.metaKey) {
+        // Ctrl+click: add this row to existing marking, then drag extends from here
+        mm.addToMarking([row._rowIndex], self._id);
+        _dragMode = 'add';
+      } else if (e.shiftKey) {
+        mm.addToMarking([row._rowIndex], self._id);
+        _dragMode = 'add';
+      } else {
+        mm.setMarking([row._rowIndex], self._id);
+        _dragMode = 'replace';
+      }
+    });
+
+    tbody.addEventListener('mouseover', function (e) {
+      if (!_dragging) return;
+      var row = e.target.closest('tr');
+      if (!row || row._rowIndex == null) return;
+
+      // Collect indices of all visible rows between start and current
+      var allRows = Array.from(tbody.querySelectorAll('tr'));
+      var startPos = -1, endPos = -1;
+      allRows.forEach(function (r, i) {
+        if (r._rowIndex === _startIdx) startPos = i;
+        if (r._rowIndex === row._rowIndex) endPos = i;
+      });
+
+      if (startPos < 0 || endPos < 0) return;
+      var from = Math.min(startPos, endPos);
+      var to = Math.max(startPos, endPos);
+
+      _dragIndices = [];
+      for (var i = from; i <= to; i++) {
+        if (allRows[i] && allRows[i]._rowIndex != null) {
+          _dragIndices.push(allRows[i]._rowIndex);
+        }
+      }
+
+      if (_dragMode === 'add') {
+        mm.addToMarking(_dragIndices, self._id);
+      } else {
+        mm.setMarking(_dragIndices, self._id);
+      }
+    });
+
+    document.addEventListener('mouseup', function () {
+      if (_dragging) {
+        _dragging = false;
+        self._isDragging = false;
+        // Do a final refresh to sync everything
+        self.refresh();
+      }
+    });
     div.appendChild(wrap);
 
-    // Pager
-    if (totalPages > 1) {
-      var pager = document.createElement('div');
-      pager.className = 'sl-table-pager';
+    // Pager — always show
+    var pager = document.createElement('div');
+    pager.className = 'sl-table-pager';
 
-      var info = document.createElement('span');
-      info.textContent = 'Showing ' + (start + 1) + '-' + Math.min(start + pageSize, rows.length) + ' of ' + rows.length;
-      pager.appendChild(info);
+    var info = document.createElement('span');
+    info.textContent = 'Showing ' + (start + 1) + '-' + Math.min(start + pageSize, rows.length) + ' of ' + rows.length;
+    pager.appendChild(info);
 
-      var btns = document.createElement('div');
-      btns.style.display = 'flex';
-      btns.style.gap = '4px';
+    // Nav buttons
+    var btns = document.createElement('div');
+    btns.style.cssText = 'display:flex;gap:4px;';
 
-      var prev = document.createElement('button');
-      prev.textContent = '\u25C0 Prev';
-      prev.disabled = this._page === 0;
-      prev.addEventListener('click', function () { self._page--; self.refresh(); });
+    var prev = document.createElement('button');
+    prev.textContent = '\u25C0 Prev';
+    prev.disabled = this._page === 0;
+    prev.addEventListener('click', function () { self._page--; self.refresh(); });
 
-      var next = document.createElement('button');
-      next.textContent = 'Next \u25B6';
-      next.disabled = this._page >= totalPages - 1;
-      next.addEventListener('click', function () { self._page++; self.refresh(); });
+    var next = document.createElement('button');
+    next.textContent = 'Next \u25B6';
+    next.disabled = this._page >= totalPages - 1;
+    next.addEventListener('click', function () { self._page++; self.refresh(); });
 
-      btns.appendChild(prev);
-      btns.appendChild(next);
-      pager.appendChild(btns);
-      div.appendChild(pager);
-    }
+    btns.appendChild(prev);
+    btns.appendChild(next);
+    pager.appendChild(btns);
+    div.appendChild(pager);
   }
 
-  _onMarkingChanged() { this.refresh(); }
+  _onMarkingChanged() {
+    // Don't full-refresh during drag selection (would destroy DOM)
+    if (this._isDragging) {
+      // Just update row highlights without rebuilding
+      var mm = this._mm;
+      var rows = this._getPlotDiv().querySelectorAll('tbody tr');
+      rows.forEach(function (row) {
+        if (row._rowIndex != null) {
+          row.classList.toggle('sl-row-marked', mm.isMarked(row._rowIndex));
+        }
+      });
+      return;
+    }
+    this.refresh();
+  }
 }
+// ─── TileEngine — Binary Split Layout ───────────────────────
+// Implements Spotfire-style hierarchical tiling.
+// The layout is a binary tree where each node is either:
+//   - A "split" (row or column) with two children and a ratio
+//   - A "leaf" containing a chart container element
+var TileEngine = (function () {
+
+  // Create a tile container element
+  function _createTileEl() {
+    var el = document.createElement('div');
+    el.style.cssText = 'position:absolute;overflow:hidden;box-sizing:border-box;';
+    return el;
+  }
+
+  // The layout tree node
+  function TileNode(type, parent) {
+    this.type = type; // 'leaf', 'row' (horizontal split), 'col' (vertical split)
+    this.parent = parent || null;
+    this.el = _createTileEl();
+    this.children = []; // [TileNode, TileNode] for splits
+    this.ratio = 0.5;   // split ratio (0-1), first child gets ratio, second gets 1-ratio
+    this.chartEl = null; // the chart container element (only for leaf nodes)
+  }
+
+  // Main engine
+  function Engine(containerEl) {
+    this._container = containerEl;
+    this._container.style.position = 'relative';
+    this._container.style.overflow = 'hidden';
+    this._container.style.width = '100%';
+    this._container.style.height = '100%';
+    this._root = null;
+    this._gap = 6; // gap between tiles in px
+  }
+
+  // Add a chart element to the layout
+  Engine.prototype.addTile = function (chartEl) {
+    if (!this._root) {
+      // First tile — becomes the root leaf
+      this._root = new TileNode('leaf', null);
+      this._root.chartEl = chartEl;
+      this._root.el.appendChild(chartEl);
+      this._container.appendChild(this._root.el);
+      this.layout();
+      return this._root;
+    }
+
+    // Find the largest leaf to split
+    var target = this._findLargestLeaf(this._root);
+    return this._splitLeaf(target, chartEl);
+  };
+
+  // Split a leaf node to add a new chart
+  Engine.prototype._splitLeaf = function (leaf, newChartEl) {
+    var parent = leaf.parent;
+
+    // Alternate split direction based on depth — even depth = col, odd = row
+    // This creates a balanced 2x2 grid pattern
+    var depth = 0;
+    var p = parent;
+    while (p) { depth++; p = p.parent; }
+    var splitType = depth % 2 === 0 ? 'col' : 'row';
+
+    // Create new split node
+    var split = new TileNode(splitType, parent);
+    split.ratio = 0.5;
+
+    // Existing leaf becomes first child
+    leaf.parent = split;
+    split.children[0] = leaf;
+
+    // New leaf for the new chart
+    var newLeaf = new TileNode('leaf', split);
+    newLeaf.chartEl = newChartEl;
+    newLeaf.el.appendChild(newChartEl);
+    split.children[1] = newLeaf;
+
+    // Replace leaf with split in parent
+    if (parent) {
+      var idx = parent.children.indexOf(leaf);
+      parent.children[idx] = split;
+      parent.el.removeChild(leaf.el);
+      parent.el.appendChild(split.el);
+    } else {
+      // leaf was root
+      this._container.removeChild(leaf.el);
+      this._root = split;
+      this._container.appendChild(split.el);
+    }
+
+    split.el.appendChild(leaf.el);
+    split.el.appendChild(newLeaf.el);
+
+    this.layout();
+    return newLeaf;
+  };
+
+  // Remove a chart from the layout
+  Engine.prototype.removeTile = function (chartEl) {
+    var leaf = this._findLeafByChart(this._root, chartEl);
+    if (!leaf) return;
+
+    var parent = leaf.parent;
+    if (!parent) {
+      // Only tile — clear everything
+      this._container.removeChild(leaf.el);
+      this._root = null;
+      return;
+    }
+
+    // Find sibling
+    var sibling = parent.children[0] === leaf ? parent.children[1] : parent.children[0];
+
+    // Replace parent with sibling in grandparent
+    var grandparent = parent.parent;
+    if (grandparent) {
+      var idx = grandparent.children.indexOf(parent);
+      grandparent.children[idx] = sibling;
+      sibling.parent = grandparent;
+      grandparent.el.removeChild(parent.el);
+      grandparent.el.appendChild(sibling.el);
+    } else {
+      // parent was root
+      this._container.removeChild(parent.el);
+      this._root = sibling;
+      sibling.parent = null;
+      this._container.appendChild(sibling.el);
+    }
+
+    this.layout();
+  };
+
+  // Recalculate all positions and sizes
+  Engine.prototype.layout = function () {
+    if (!this._root) return;
+    var rect = this._container.getBoundingClientRect();
+    this._layoutNode(this._root, 0, 0, rect.width, rect.height);
+
+    // Trigger Plotly resize on all charts
+    setTimeout(function () {
+      window.dispatchEvent(new Event('resize'));
+    }, 50);
+    setTimeout(function () {
+      window.dispatchEvent(new Event('resize'));
+    }, 200);
+  };
+
+  Engine.prototype._layoutNode = function (node, x, y, w, h) {
+    node.el.style.left = x + 'px';
+    node.el.style.top = y + 'px';
+    node.el.style.width = w + 'px';
+    node.el.style.height = h + 'px';
+
+    if (node.type === 'leaf') {
+      // Size the chart element to fill the tile
+      if (node.chartEl) {
+        node.chartEl.style.width = '100%';
+        node.chartEl.style.height = '100%';
+        var panel = node.chartEl.querySelector('.sl-panel');
+        if (panel) {
+          panel.style.height = '100%';
+        }
+      }
+      return;
+    }
+
+    var gap = this._gap;
+    var r = node.ratio;
+
+    if (node.type === 'col') {
+      // Vertical split: left | right
+      var leftW = (w - gap) * r;
+      var rightW = w - gap - leftW;
+      this._layoutNode(node.children[0], x, y, leftW, h);
+      this._layoutNode(node.children[1], x + leftW + gap, y, rightW, h);
+    } else {
+      // Horizontal split: top / bottom
+      var topH = (h - gap) * r;
+      var bottomH = h - gap - topH;
+      this._layoutNode(node.children[0], x, y, w, topH);
+      this._layoutNode(node.children[1], x, y + topH + gap, w, bottomH);
+    }
+  };
+
+  // Find the largest leaf node (by area)
+  Engine.prototype._findLargestLeaf = function (node) {
+    if (node.type === 'leaf') return node;
+    var a = this._findLargestLeaf(node.children[0]);
+    var b = this._findLargestLeaf(node.children[1]);
+    var aRect = a.el.getBoundingClientRect();
+    var bRect = b.el.getBoundingClientRect();
+    return (aRect.width * aRect.height >= bRect.width * bRect.height) ? a : b;
+  };
+
+  // Find leaf by chart element
+  Engine.prototype._findLeafByChart = function (node, chartEl) {
+    if (!node) return null;
+    if (node.type === 'leaf') return node.chartEl === chartEl ? node : null;
+    return this._findLeafByChart(node.children[0], chartEl) ||
+           this._findLeafByChart(node.children[1], chartEl);
+  };
+
+  // Get all leaf nodes
+  Engine.prototype.getLeaves = function () {
+    var leaves = [];
+    function _walk(node) {
+      if (!node) return;
+      if (node.type === 'leaf') { leaves.push(node); return; }
+      _walk(node.children[0]);
+      _walk(node.children[1]);
+    }
+    _walk(this._root);
+    return leaves;
+  };
+
+  // Handle window resize
+  Engine.prototype.onResize = function () {
+    this.layout();
+  };
+
+  return { Engine: Engine };
+})();
 // ─── ContextMenu ────────────────────────────────────────────
 var ContextMenu = (function () {
   var _menu = null;
@@ -2720,14 +3196,48 @@ var ContextMenu = (function () {
       label.textContent = item.label;
       row.appendChild(label);
 
-      if (item.shortcut) {
+      if (item.submenu) {
+        // Submenu arrow
+        var arrow = document.createElement('span');
+        arrow.className = 'sl-ctx-shortcut';
+        arrow.textContent = '\u25B6';
+        row.appendChild(arrow);
+
+        // Build submenu
+        var sub = document.createElement('div');
+        sub.className = 'sl-context-menu sl-ctx-submenu';
+        sub.style.cssText = 'display:none;position:absolute;left:100%;top:0;';
+        item.submenu.forEach(function (si) {
+          var sr = document.createElement('div');
+          sr.className = 'sl-ctx-item';
+          if (si.icon) {
+            var sIcon = document.createElement('span');
+            sIcon.className = 'sl-ctx-icon';
+            sIcon.textContent = si.icon;
+            sr.appendChild(sIcon);
+          }
+          var sLabel = document.createElement('span');
+          sLabel.textContent = si.label;
+          sr.appendChild(sLabel);
+          sr.addEventListener('click', function (e) {
+            e.stopPropagation();
+            hide();
+            if (si.action) si.action();
+          });
+          sub.appendChild(sr);
+        });
+        row.style.position = 'relative';
+        row.appendChild(sub);
+        row.addEventListener('mouseenter', function () { sub.style.display = 'block'; });
+        row.addEventListener('mouseleave', function () { sub.style.display = 'none'; });
+      } else if (item.shortcut) {
         var shortcut = document.createElement('span');
         shortcut.className = 'sl-ctx-shortcut';
         shortcut.textContent = item.shortcut;
         row.appendChild(shortcut);
       }
 
-      if (!item.disabled) {
+      if (!item.disabled && !item.submenu) {
         row.addEventListener('click', function (e) {
           e.stopPropagation();
           hide();
@@ -2829,6 +3339,40 @@ var ContextMenu = (function () {
       items.push('---');
     }
 
+    // Sort options — only for BarChart and PieChart
+    var isBar = chartInstance instanceof BarChart;
+    var isPie = chartInstance instanceof PieChart;
+    if (isBar || isPie) {
+      var catCol = cfg.category;
+      var valCol = cfg.value;
+      var agg = cfg.aggregation || 'sum';
+
+      // Check if value column is numeric
+      var valIsNum = valCol && ds._columns.some(function (c) { return c.name === valCol && c.type === 'number'; });
+
+      if (valIsNum) {
+        items.push({
+          icon: '\u2191', label: 'Sort by Value (Ascending)',
+          action: function () { _sortChart(chartInstance, ds, 'value', 'asc'); }
+        });
+        items.push({
+          icon: '\u2193', label: 'Sort by Value (Descending)',
+          action: function () { _sortChart(chartInstance, ds, 'value', 'desc'); }
+        });
+      }
+
+      items.push({
+        icon: '\u2191', label: 'Sort Alphabetical (A \u2192 Z)',
+        action: function () { _sortChart(chartInstance, ds, 'category', 'asc'); }
+      });
+      items.push({
+        icon: '\u2193', label: 'Sort Alphabetical (Z \u2192 A)',
+        action: function () { _sortChart(chartInstance, ds, 'category', 'desc'); }
+      });
+
+      items.push('---');
+    }
+
     // Batch actions on marked data
     if (mm.hasMarking()) {
       var markedCount = mm.getMarkedIndices().size;
@@ -2881,6 +3425,15 @@ var ContextMenu = (function () {
 
     // General actions
     items.push({
+      icon: '\u2610', label: 'Select all',
+      action: function () {
+        var rows = ds.getFilteredRows();
+        var indices = rows.map(function (r) { return r.__rowIndex; });
+        mm.setMarking(indices, chartInstance._id);
+      }
+    });
+
+    items.push({
       icon: '\u21A9', label: 'Clear marking',
       shortcut: 'Esc',
       disabled: !mm.hasMarking(),
@@ -2906,7 +3459,171 @@ var ContextMenu = (function () {
       action: function () { ds.downloadCSV('spottyfire-marked.csv', { markedOnly: true }); }
     });
 
+    items.push('---');
+
+    // Duplicate visualization
+    items.push({
+      icon: '\uD83D\uDCCB', label: 'Duplicate visualization',
+      action: function () { _duplicateChart(chartInstance); }
+    });
+
+    // Create visualization submenu
+    items.push({
+      icon: '\u2795', label: 'Create Visualization',
+      submenu: [
+        { icon: '\uD83D\uDCCA', label: 'Bar Chart', action: function () { _createLinkedChart(chartInstance, 'bar'); } },
+        { icon: '\u2022\u2022', label: 'Scatter Plot', action: function () { _createLinkedChart(chartInstance, 'scatter'); } },
+        { icon: '\uD83D\uDCC8', label: 'Line Chart', action: function () { _createLinkedChart(chartInstance, 'line'); } },
+        { icon: '\u25D4', label: 'Pie Chart', action: function () { _createLinkedChart(chartInstance, 'pie'); } },
+        { icon: '\u2593', label: 'Heatmap', action: function () { _createLinkedChart(chartInstance, 'heatmap'); } },
+        { icon: '\u2630', label: 'Data Table', action: function () { _createLinkedChart(chartInstance, 'table'); } },
+      ]
+    });
+
     return items;
+  }
+
+  // Sort a bar/pie chart by value or category
+  function _sortChart(chartInstance, ds, sortBy, direction) {
+    var cfg = chartInstance._config;
+    var catCol = cfg.category;
+    var valCol = cfg.value;
+    var agg = cfg.aggregation || 'sum';
+
+    // Get aggregated values per category
+    var rows = ds.getFilteredRows();
+    var groups = {};
+    rows.forEach(function (r) {
+      var key = String(r[catCol] || 'Unknown');
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(+r[valCol] || 0);
+    });
+
+    var categories = Object.keys(groups);
+    var aggValues = {};
+    categories.forEach(function (k) {
+      var arr = groups[k];
+      if (agg === 'sum') aggValues[k] = arr.reduce(function (a, b) { return a + b; }, 0);
+      else if (agg === 'avg') aggValues[k] = arr.reduce(function (a, b) { return a + b; }, 0) / arr.length;
+      else if (agg === 'count') aggValues[k] = arr.length;
+      else if (agg === 'min') aggValues[k] = Math.min.apply(null, arr);
+      else if (agg === 'max') aggValues[k] = Math.max.apply(null, arr);
+      else aggValues[k] = arr.reduce(function (a, b) { return a + b; }, 0);
+    });
+
+    // Sort categories
+    if (sortBy === 'value') {
+      categories.sort(function (a, b) {
+        return direction === 'asc' ? aggValues[a] - aggValues[b] : aggValues[b] - aggValues[a];
+      });
+    } else {
+      categories.sort(function (a, b) {
+        var sa = a.toLowerCase(), sb = b.toLowerCase();
+        if (sa < sb) return direction === 'asc' ? -1 : 1;
+        if (sa > sb) return direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    // Apply sort by reordering the data rows
+    // Store sort order in config so refresh uses it
+    chartInstance._config._sortOrder = categories;
+    chartInstance.refresh();
+  }
+
+  // Duplicate a chart with the same config
+  function _duplicateChart(chartInstance) {
+    var ds = chartInstance._ds;
+    var cfg = JSON.parse(JSON.stringify(chartInstance._config));
+    cfg.title = (cfg.title || 'Chart') + ' (copy)';
+
+    var grid = document.querySelector('.app-grid');
+    if (!grid) return;
+
+    var div = document.createElement('div');
+    grid.appendChild(div);
+
+    var type = (chartInstance instanceof BarChart) ? 'bar' :
+      (chartInstance instanceof ScatterPlot) ? 'scatter' :
+      (chartInstance instanceof LineChart) ? 'line' :
+      (chartInstance instanceof PieChart) ? 'pie' :
+      (chartInstance instanceof HeatMap) ? 'heatmap' :
+      (chartInstance instanceof DataTable) ? 'table' : null;
+
+    _createChartByType(div, ds, type, cfg);
+
+    setTimeout(function () {
+      if (typeof window.recalcLayout === 'function') window.recalcLayout();
+    }, 50);
+  }
+
+  // Create a new chart linked (data limited by) to the source chart
+  function _createLinkedChart(sourceChart, newType) {
+    var ds = sourceChart._ds;
+    var sourceId = sourceChart._id;
+
+    var cols = ds.getColumns().filter(function (c) { return c.name !== '__rowIndex'; });
+    var numCols = cols.filter(function (c) { return c.type === 'number'; });
+    var strCols = cols.filter(function (c) { return c.type !== 'number'; });
+    var catCols = strCols.filter(function (c) { return ds.getColumnValues(c.name).length <= 20; });
+    if (catCols.length === 0) catCols = strCols;
+
+    var firstNum = numCols[0] ? numCols[0].name : cols[0].name;
+    var secondNum = numCols[1] ? numCols[1].name : firstNum;
+    var firstCat = catCols[0] ? catCols[0].name : cols[0].name;
+    var secondCat = catCols[1] ? catCols[1].name : firstCat;
+
+    var cfg = { dataLimitedBy: sourceId };
+
+    switch (newType) {
+      case 'bar':
+        cfg.category = firstCat; cfg.value = firstNum; cfg.aggregation = 'avg'; cfg.showValues = true;
+        cfg.title = 'Avg ' + firstNum + ' by ' + firstCat;
+        break;
+      case 'scatter':
+        cfg.x = secondNum; cfg.y = firstNum; cfg.colorBy = catCols[0] ? firstCat : null; cfg.pointSize = 7;
+        cfg.title = secondNum + ' vs ' + firstNum;
+        break;
+      case 'line':
+        cfg.x = firstCat; cfg.y = [firstNum]; cfg.smooth = true;
+        cfg.title = firstNum + ' by ' + firstCat;
+        break;
+      case 'pie':
+        cfg.category = firstCat; cfg.value = firstNum; cfg.aggregation = 'sum'; cfg.hole = 0.45; cfg.showPercent = true;
+        cfg.title = firstNum + ' by ' + firstCat;
+        break;
+      case 'heatmap':
+        cfg.x = firstCat; cfg.y = secondCat; cfg.value = firstNum; cfg.aggregation = 'avg'; cfg.showValues = true;
+        cfg.title = 'Avg ' + firstNum + ': ' + firstCat + ' x ' + secondCat;
+        break;
+      case 'table':
+        cfg.columns = cols.map(function (c) { return c.name; }).slice(0, 10); cfg.pageSize = 20;
+        cfg.title = 'Data Table';
+        break;
+    }
+
+    var grid = document.querySelector('.app-grid');
+    if (!grid) return;
+
+    var div = document.createElement('div');
+    grid.appendChild(div);
+    _createChartByType(div, ds, newType, cfg);
+
+    setTimeout(function () {
+      if (typeof window.recalcLayout === 'function') window.recalcLayout();
+    }, 50);
+  }
+
+  // Helper to create chart by type string
+  function _createChartByType(div, ds, type, cfg) {
+    switch (type) {
+      case 'bar': SpottyFire.BarChart(div, ds, cfg); break;
+      case 'scatter': SpottyFire.ScatterPlot(div, ds, cfg); break;
+      case 'line': SpottyFire.LineChart(div, ds, cfg); break;
+      case 'pie': SpottyFire.PieChart(div, ds, cfg); break;
+      case 'heatmap': SpottyFire.HeatMap(div, ds, cfg); break;
+      case 'table': SpottyFire.DataTable(div, ds, cfg); break;
+    }
   }
 
   return {
@@ -2936,7 +3653,8 @@ var ChartWrapper = (function () {
   }
 
   // Helper: axis dropdown that refreshes options on focus
-  function _makeAxisSelect(label, getVal, chartInst, onChange) {
+  // colFilter: 'numeric', 'string', 'category', or null (all)
+  function _makeAxisSelect(label, getVal, chartInst, onChange, colFilter, includeNone) {
     var select = document.createElement('select');
     select.title = label;
     select.className = 'sl-axis-select';
@@ -2944,12 +3662,43 @@ var ChartWrapper = (function () {
     function _populate() {
       var curVal = getVal();
       select.innerHTML = '';
-      var cols = chartInst._ds.getColumnNames();
-      cols.forEach(function (c) {
+      var ds = chartInst._ds;
+      var allCols = ds.getColumns().filter(function (c) { return c.name !== '__rowIndex'; });
+
+      var filtered = allCols;
+      if (colFilter === 'numeric') {
+        filtered = allCols.filter(function (c) { return c.type === 'number'; });
+      } else if (colFilter === 'string') {
+        filtered = allCols.filter(function (c) { return c.type !== 'number'; });
+      } else if (colFilter === 'category') {
+        // String columns with <= 30 unique values
+        filtered = allCols.filter(function (c) {
+          if (c.type === 'number') return false;
+          return ds.getColumnValues(c.name).length <= 30;
+        });
+        if (filtered.length === 0) filtered = allCols.filter(function (c) { return c.type !== 'number'; });
+      }
+
+      // Always include current value even if it doesn't match filter
+      var hasCurrentVal = filtered.some(function (c) { return c.name === curVal; });
+      if (curVal && !hasCurrentVal) {
+        var curCol = allCols.find(function (c) { return c.name === curVal; });
+        if (curCol) filtered.unshift(curCol);
+      }
+
+      if (includeNone) {
+        var noneEl = document.createElement('option');
+        noneEl.value = 'None';
+        noneEl.textContent = 'None (show total)';
+        if (curVal === 'None' || !curVal) noneEl.selected = true;
+        select.appendChild(noneEl);
+      }
+
+      filtered.forEach(function (c) {
         var el = document.createElement('option');
-        el.value = c;
-        el.textContent = c;
-        if (c === curVal) el.selected = true;
+        el.value = c.name;
+        el.textContent = c.name;
+        if (c.name === curVal) el.selected = true;
         select.appendChild(el);
       });
     }
@@ -2990,6 +3739,88 @@ var ChartWrapper = (function () {
     document.head.appendChild(s);
   }
 
+  // Transform a chart to a different type
+  function _transformChart(oldChart, container, newType) {
+    var ds = oldChart._ds;
+    var oldCfg = oldChart._config;
+
+    // Keep container in DOM — prevent destroy() from removing it
+    var parentGrid = container.parentNode;
+    var nextSibling = container.nextSibling;
+
+    // Get available columns
+    var cols = ds.getColumns().filter(function (c) { return c.name !== '__rowIndex'; });
+    var numCols = cols.filter(function (c) { return c.type === 'number'; });
+    var strCols = cols.filter(function (c) { return c.type !== 'number'; });
+    var catCols = strCols.filter(function (c) { return ds.getColumnValues(c.name).length <= 30; });
+    if (catCols.length === 0) catCols = strCols;
+
+    // Try to reuse existing axis values, fall back to best match
+    var bestNum = oldCfg.value || oldCfg.y || (numCols[0] ? numCols[0].name : cols[0].name);
+    var bestNum2 = oldCfg.x || (numCols[1] ? numCols[1].name : bestNum);
+    var bestCat = oldCfg.category || oldCfg.x || (catCols[0] ? catCols[0].name : cols[0].name);
+    var bestCat2 = catCols[1] ? catCols[1].name : bestCat;
+    var bestColor = oldCfg.colorBy || oldCfg.groupBy || null;
+
+    // Validate: make sure numeric picks are actually numeric
+    if (!numCols.some(function (c) { return c.name === bestNum; })) bestNum = numCols[0] ? numCols[0].name : cols[0].name;
+    if (!numCols.some(function (c) { return c.name === bestNum2; })) bestNum2 = numCols[1] ? numCols[1].name : bestNum;
+    if (!catCols.some(function (c) { return c.name === bestCat; }) && !strCols.some(function (c) { return c.name === bestCat; })) bestCat = catCols[0] ? catCols[0].name : cols[0].name;
+
+    // Destroy old chart (this may remove the container from DOM)
+    oldChart.destroy();
+
+    // Re-insert container if it was removed by destroy()
+    if (!container.parentNode && parentGrid) {
+      if (nextSibling) parentGrid.insertBefore(container, nextSibling);
+      else parentGrid.appendChild(container);
+    }
+    container.innerHTML = ''; // clear any leftover content
+
+    // Create new chart
+    switch (newType) {
+      case 'bar':
+        SpottyFire.BarChart(container, ds, {
+          category: bestCat, value: bestNum, aggregation: 'avg', showValues: true,
+          colorBy: bestColor, title: 'Avg ' + bestNum + ' by ' + bestCat,
+        });
+        break;
+      case 'scatter':
+        SpottyFire.ScatterPlot(container, ds, {
+          x: bestNum2, y: bestNum, colorBy: bestColor || (catCols[0] ? catCols[0].name : null),
+          pointSize: 7, title: bestNum2 + ' vs ' + bestNum,
+        });
+        break;
+      case 'line':
+        SpottyFire.LineChart(container, ds, {
+          x: bestCat, y: [bestNum], groupBy: bestColor, smooth: true,
+          title: bestNum + ' by ' + bestCat,
+        });
+        break;
+      case 'pie':
+        SpottyFire.PieChart(container, ds, {
+          category: bestCat, value: bestNum, aggregation: 'sum',
+          hole: 0.45, showPercent: true, title: bestNum + ' by ' + bestCat,
+        });
+        break;
+      case 'heatmap':
+        SpottyFire.HeatMap(container, ds, {
+          x: bestCat, y: bestCat2, value: bestNum, aggregation: 'avg', showValues: true,
+          title: 'Avg ' + bestNum + ': ' + bestCat + ' x ' + bestCat2,
+        });
+        break;
+      case 'table':
+        SpottyFire.DataTable(container, ds, {
+          columns: cols.map(function (c) { return c.name; }).slice(0, 10),
+          pageSize: 20, title: 'Data Table',
+        });
+        break;
+    }
+
+    // Recalculate layout
+    if (typeof window.recalcLayout === 'function') window.recalcLayout();
+  }
+
   // Build the collapsible properties sidebar
   function _buildColorSidebar(chartInstance, colorByKey, colOptsWithNone) {
     var cfg = chartInstance._config;
@@ -3022,13 +3853,14 @@ var ChartWrapper = (function () {
     var body = document.createElement('div');
     body.className = 'sl-color-sidebar-body';
 
-    // Column selector dropdown
+    // Column selector dropdown — "Line by" for LineChart, "Color by" for others
+    var colorLabel = (chartInstance instanceof LineChart) ? 'Line by' : 'Color by';
     var label = document.createElement('div');
     label.className = 'sl-color-label';
-    label.textContent = 'Color by';
+    label.textContent = colorLabel;
     body.appendChild(label);
 
-    var select = _makeSelect('Color by', cfg[colorByKey] || '', colOptsWithNone, function (val) {
+    var select = _makeSelect(colorLabel, cfg[colorByKey] || '', colOptsWithNone, function (val) {
       var update = {};
       update[colorByKey] = val || null;
       chartInstance.updateConfig(update);
@@ -3090,6 +3922,84 @@ var ChartWrapper = (function () {
 
     // Update legend on theme change
     ThemeManager.on(function () { _renderLegend(); });
+
+    // ── Marker By section (Line chart only) ──
+    if (chartInstance instanceof LineChart) {
+      var markerLabel = document.createElement('div');
+      markerLabel.className = 'sl-color-label';
+      markerLabel.style.marginTop = '10px';
+      markerLabel.style.borderTop = '1px solid var(--sl-panel-border)';
+      markerLabel.style.paddingTop = '8px';
+      markerLabel.textContent = 'Marker by';
+      body.appendChild(markerLabel);
+
+      var markerSelect = document.createElement('select');
+      markerSelect.className = 'sl-axis-select';
+      markerSelect.style.width = '100%';
+      markerSelect.style.marginBottom = '4px';
+
+      function _populateMarkerBy() {
+        var curVal = chartInstance._config.markerBy || '';
+        markerSelect.innerHTML = '';
+        var noneOpt = document.createElement('option');
+        noneOpt.value = '';
+        noneOpt.textContent = 'None';
+        markerSelect.appendChild(noneOpt);
+        var allCols = ds.getColumns().filter(function (c) { return c.name !== '__rowIndex' && c.type !== 'number'; });
+        allCols.forEach(function (c) {
+          if (ds.getColumnValues(c.name).length > 20) return;
+          var opt = document.createElement('option');
+          opt.value = c.name;
+          opt.textContent = c.name;
+          if (c.name === curVal) opt.selected = true;
+          markerSelect.appendChild(opt);
+        });
+      }
+      _populateMarkerBy();
+      markerSelect.addEventListener('focus', _populateMarkerBy);
+      markerSelect.addEventListener('change', function () {
+        chartInstance.updateConfig({ markerBy: markerSelect.value || null });
+      });
+      body.appendChild(markerSelect);
+
+      // Marker legend
+      var markerLegend = document.createElement('div');
+      function _renderMarkerLegend() {
+        markerLegend.innerHTML = '';
+        var mb = chartInstance._config.markerBy;
+        if (!mb) return;
+        var symbols = ['\u25CF', '\u25A0', '\u25C6', '\u2716', '\u2573', '\u25B2', '\u25BC', '\u2605', '\u2B22', '\u2B1F'];
+        var vals = ds.getColumnValues(mb).slice(0, 10);
+        vals.forEach(function (v, i) {
+          var item = document.createElement('div');
+          item.className = 'sl-color-item';
+          var sym = document.createElement('span');
+          sym.style.cssText = 'width:14px;text-align:center;font-size:12px;flex-shrink:0;';
+          sym.textContent = symbols[i % symbols.length];
+          item.appendChild(sym);
+          var txt = document.createElement('span');
+          txt.textContent = v;
+          item.appendChild(txt);
+          markerLegend.appendChild(item);
+        });
+      }
+      _renderMarkerLegend();
+      body.appendChild(markerLegend);
+
+      // Show markers toggle
+      var showMarkersLabel = document.createElement('label');
+      showMarkersLabel.className = 'sl-color-item';
+      showMarkersLabel.style.marginTop = '6px';
+      var smCb = document.createElement('input');
+      smCb.type = 'checkbox';
+      smCb.checked = !!(chartInstance._config.showMarkers || chartInstance._config.markerBy);
+      smCb.addEventListener('change', function () {
+        chartInstance.updateConfig({ showMarkers: smCb.checked });
+      });
+      showMarkersLabel.appendChild(smCb);
+      showMarkersLabel.appendChild(document.createTextNode(' Show markers'));
+      body.appendChild(showMarkersLabel);
+    }
 
     // ── Data Limited By section ──
     var limitLabel = document.createElement('div');
@@ -3173,9 +4083,49 @@ var ChartWrapper = (function () {
     var header = document.createElement('div');
     header.className = 'sl-panel-header';
 
+    // Chart type switcher
+    var titleWrap = document.createElement('div');
+    titleWrap.style.cssText = 'display:flex;align-items:center;gap:6px;min-width:0;flex:1;';
+
+    if (chartInstance && chartInstance._ds) {
+      var typeSelect = document.createElement('select');
+      typeSelect.className = 'sl-axis-select';
+      typeSelect.title = 'Change chart type';
+      typeSelect.style.cssText += 'font-size:13px;padding:2px 4px;flex-shrink:0;';
+      var types = [
+        { value: 'bar', label: '\uD83D\uDCCA', name: 'Bar' },
+        { value: 'scatter', label: '\u2022\u2022', name: 'Scatter' },
+        { value: 'line', label: '\uD83D\uDCC8', name: 'Line' },
+        { value: 'pie', label: '\u25D4', name: 'Pie' },
+        { value: 'heatmap', label: '\u2593', name: 'Heatmap' },
+        { value: 'table', label: '\u2630', name: 'Table' },
+      ];
+      var currentType = (chartInstance instanceof BarChart) ? 'bar' :
+        (chartInstance instanceof ScatterPlot) ? 'scatter' :
+        (chartInstance instanceof LineChart) ? 'line' :
+        (chartInstance instanceof PieChart) ? 'pie' :
+        (chartInstance instanceof HeatMap) ? 'heatmap' :
+        (chartInstance instanceof DataTable) ? 'table' : '';
+
+      types.forEach(function (t) {
+        var opt = document.createElement('option');
+        opt.value = t.value;
+        opt.textContent = t.label + ' ' + t.name;
+        if (t.value === currentType) opt.selected = true;
+        typeSelect.appendChild(opt);
+      });
+
+      typeSelect.addEventListener('change', function () {
+        _transformChart(chartInstance, container, typeSelect.value);
+      });
+      titleWrap.appendChild(typeSelect);
+    }
+
     var titleEl = document.createElement('span');
     titleEl.textContent = title || '';
-    header.appendChild(titleEl);
+    titleEl.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+    titleWrap.appendChild(titleEl);
+    header.appendChild(titleWrap);
 
     var actions = document.createElement('div');
     actions.className = 'sl-panel-header-actions';
@@ -3232,6 +4182,24 @@ var ChartWrapper = (function () {
       actions.appendChild(limitHeaderSelect);
     }
 
+    // Page size selector — only for DataTable
+    if (chartInstance instanceof DataTable) {
+      var pgSelect = _makeSelect('Show', String(cfg.pageSize || 20), [
+        { value: '10', label: '10' },
+        { value: '20', label: '20' },
+        { value: '50', label: '50' },
+        { value: '100', label: '100' },
+        { value: '200', label: '200' },
+        { value: '500', label: '500' },
+        { value: '1000', label: '1000' },
+      ], function (val) {
+        chartInstance._config.pageSize = +val;
+        chartInstance._page = 0;
+        chartInstance.refresh();
+      });
+      actions.appendChild(pgSelect);
+    }
+
     // Clear marking button
     var clearBtn = document.createElement('button');
     clearBtn.textContent = '\u2715 Clear';
@@ -3243,12 +4211,12 @@ var ChartWrapper = (function () {
 
     // Fullscreen toggle
     var fsBtn = document.createElement('button');
-    fsBtn.textContent = '\u26F6';
+    fsBtn.innerHTML = '\u26F6'; // ⛶ expand
     fsBtn.title = 'Fullscreen';
     var _preFsHeight = null;
     fsBtn.addEventListener('click', function () {
       var isFs = panel.classList.toggle('sl-fullscreen');
-      fsBtn.textContent = isFs ? '\u2716' : '\u26F6';
+      fsBtn.innerHTML = isFs ? '\u2199' : '\u26F6'; // ↙ compress / ⛶ expand
       fsBtn.title = isFs ? 'Exit fullscreen' : 'Fullscreen';
       document.body.style.overflow = isFs ? 'hidden' : '';
       if (isFs) {
@@ -3319,6 +4287,18 @@ var ChartWrapper = (function () {
       panel._cogMenu = cogWrap;
     }
 
+    // Close (remove) chart button — always last
+    var closeBtn = document.createElement('button');
+    closeBtn.textContent = '\u2715';
+    closeBtn.title = 'Close this chart';
+    closeBtn.style.cssText += 'color:var(--sl-text-muted);';
+    closeBtn.addEventListener('click', function () {
+      if (chartInstance && chartInstance.destroy) {
+        chartInstance.destroy();
+      }
+    });
+    actions.appendChild(closeBtn);
+
     header.appendChild(actions);
     panel.appendChild(header);
 
@@ -3334,23 +4314,23 @@ var ChartWrapper = (function () {
       if (isScatter) {
         yBar.appendChild(_makeAxisSelect('Y axis', function () { return chartInstance._config.y; }, chartInstance, function (val) {
           chartInstance.updateConfig({ y: val });
-        }));
+        }, 'numeric'));
       } else if (isPie) {
         yBar.appendChild(_makeAxisSelect('Size by', function () { return chartInstance._config.value; }, chartInstance, function (val) {
           chartInstance.updateConfig({ value: val });
-        }));
+        }, 'numeric'));
       } else if (isBar) {
         yBar.appendChild(_makeAxisSelect('Value', function () { return chartInstance._config.value; }, chartInstance, function (val) {
           chartInstance.updateConfig({ value: val });
-        }));
+        }, 'numeric'));
       } else if (isLine) {
         yBar.appendChild(_makeAxisSelect('Y axis', function () { var y = chartInstance._config.y; return Array.isArray(y) ? y[0] : y; }, chartInstance, function (val) {
           chartInstance.updateConfig({ y: [val] });
-        }));
+        }, 'numeric'));
       } else if (isHeat) {
         yBar.appendChild(_makeAxisSelect('Y axis', function () { return chartInstance._config.y; }, chartInstance, function (val) {
           chartInstance.updateConfig({ y: val });
-        }));
+        }, 'category'));
       }
 
       layout.appendChild(yBar);
@@ -3367,29 +4347,33 @@ var ChartWrapper = (function () {
       var xBar = document.createElement('div');
       xBar.className = 'sl-x-axis-bar';
 
-      if (isScatter || isLine) {
+      if (isScatter) {
         xBar.appendChild(_makeAxisSelect('X axis', function () { return chartInstance._config.x; }, chartInstance, function (val) {
           chartInstance.updateConfig({ x: val });
-        }));
+        }, 'numeric'));
+      } else if (isLine) {
+        xBar.appendChild(_makeAxisSelect('X axis', function () { return chartInstance._config.x; }, chartInstance, function (val) {
+          chartInstance.updateConfig({ x: val });
+        }, null)); // line X can be date/string/numeric
       } else if (isPie) {
         xBar.appendChild(_makeAxisSelect('Slice by', function () { return chartInstance._config.category; }, chartInstance, function (val) {
           chartInstance.updateConfig({ category: val });
-        }));
+        }, 'category'));
       } else if (isBar) {
         xBar.appendChild(_makeAxisSelect('Category', function () { return chartInstance._config.category; }, chartInstance, function (val) {
-          chartInstance.updateConfig({ category: val });
-        }));
+          chartInstance.updateConfig({ category: val === 'None' ? null : val });
+        }, null, true));
       } else if (isHeat) {
         xBar.appendChild(_makeAxisSelect('X axis', function () { return chartInstance._config.x; }, chartInstance, function (val) {
           chartInstance.updateConfig({ x: val });
-        }));
+        }, 'category'));
         var lbl = document.createElement('span');
         lbl.className = 'sl-axis-label';
         lbl.textContent = 'Value:';
         xBar.appendChild(lbl);
         xBar.appendChild(_makeAxisSelect('Value', function () { return chartInstance._config.value; }, chartInstance, function (val) {
           chartInstance.updateConfig({ value: val });
-        }));
+        }, 'numeric'));
       }
 
       col.appendChild(xBar);
@@ -3432,6 +4416,27 @@ var ChartWrapper = (function () {
             Plotly.relayout(plotDiv, { 'yaxis.showticklabels': on, 'yaxis.title.text': on ? (chartInstance._config.y || chartInstance._config.value || '') : '' });
           }
         });
+
+        // Pie chart specific toggles
+        if (isPie) {
+          _addToggle('Show percentage', cfg.showPercent !== false, function (on) {
+            chartInstance._config.showPercent = on;
+            chartInstance.refresh();
+          });
+
+          _addToggle('Show values', false, function (on) {
+            chartInstance._config.showValues = on;
+            chartInstance.refresh();
+          });
+        }
+
+        // Bar chart specific toggle
+        if (isBar) {
+          _addToggle('Show values', cfg.showValues || false, function (on) {
+            chartInstance._config.showValues = on;
+            chartInstance.refresh();
+          });
+        }
       }
 
     } else {
@@ -3496,9 +4501,24 @@ class FilterPanel {
     if (!this._container) throw new Error('FilterPanel: container not found');
 
     var self = this;
-    // Only re-render on data load, NOT on filter changes (prevents slider destruction mid-drag)
-    this._ds.on('data-loaded', function () { self.render(); });
+    // Re-render on data load — auto-fix columns if they don't match new data
+    this._ds.on('data-loaded', function () {
+      self._autoFixColumns();
+      self.render();
+    });
     this.render();
+  }
+
+  _autoFixColumns() {
+    if (!this._config.columns) return; // using all columns anyway
+    var available = this._ds.getColumnNames();
+    var valid = this._config.columns.filter(function (c) { return available.indexOf(c) >= 0; });
+    if (valid.length === 0) {
+      // All old columns gone — use all new columns
+      this._config.columns = null; // null = auto-detect all
+    } else if (valid.length < this._config.columns.length) {
+      this._config.columns = valid;
+    }
   }
 
   render() {
@@ -3819,6 +4839,156 @@ class FilterPanel {
     // no-op — removed filter-changed listener
   }
 }
+// ─── VizPanel — Add Visualization Tiles ────────────────────
+class VizPanel {
+  constructor(selector, dataStore, config) {
+    this._ds = dataStore;
+    this._config = config || {};
+    this._container = typeof selector === 'string' ? document.querySelector(selector) : selector;
+    if (!this._container) throw new Error('VizPanel: container not found');
+    this._targetGrid = this._config.target || null; // CSS selector or element for chart grid
+    this.render();
+  }
+
+  render() {
+    var ds = this._ds;
+    var self = this;
+    var container = this._container;
+    container.innerHTML = '';
+
+    var wrap = document.createElement('div');
+    wrap.className = 'sl-viz-panel';
+
+    var title = document.createElement('div');
+    title.className = 'sl-viz-title';
+    title.textContent = 'Visualizations';
+    wrap.appendChild(title);
+
+    var subtitle = document.createElement('div');
+    subtitle.style.cssText = 'font-size:10px;color:var(--sl-text-muted);padding:0 12px 8px;';
+    subtitle.textContent = 'Click to add a chart';
+    wrap.appendChild(subtitle);
+
+    var grid = document.createElement('div');
+    grid.className = 'sl-viz-grid';
+
+    var chartTypes = [
+      { type: 'bar', icon: '\uD83D\uDCCA', label: 'Bar', desc: 'Category vs Value' },
+      { type: 'scatter', icon: '\u2022\u2022', label: 'Scatter', desc: 'X vs Y correlation' },
+      { type: 'line', icon: '\uD83D\uDCC8', label: 'Line', desc: 'Trend over time' },
+      { type: 'pie', icon: '\u25D4', label: 'Pie', desc: 'Part of whole' },
+      { type: 'heatmap', icon: '\u2593', label: 'Heatmap', desc: 'Matrix values' },
+      { type: 'table', icon: '\u2630', label: 'Table', desc: 'Data rows' },
+    ];
+
+    chartTypes.forEach(function (ct) {
+      var tile = document.createElement('div');
+      tile.className = 'sl-viz-tile';
+      tile.title = ct.desc;
+
+      var icon = document.createElement('div');
+      icon.className = 'sl-viz-icon';
+      icon.textContent = ct.icon;
+      tile.appendChild(icon);
+
+      var label = document.createElement('div');
+      label.className = 'sl-viz-label';
+      label.textContent = ct.label;
+      tile.appendChild(label);
+
+      tile.addEventListener('click', function () {
+        self._addChart(ct.type);
+      });
+
+      grid.appendChild(tile);
+    });
+
+    wrap.appendChild(grid);
+    container.appendChild(wrap);
+  }
+
+  _addChart(type) {
+    var ds = this._ds;
+    var cols = ds.getColumns().filter(function (c) { return c.name !== '__rowIndex'; });
+    var numCols = cols.filter(function (c) { return c.type === 'number'; });
+    var strCols = cols.filter(function (c) { return c.type === 'string'; });
+    var catCols = strCols.filter(function (c) { return ds.getColumnValues(c.name).length <= 20; });
+    if (catCols.length === 0) catCols = strCols;
+
+    if (cols.length === 0) { alert('No data loaded. Upload a CSV first.'); return; }
+
+    // Find or create target grid
+    var target = this._targetGrid;
+    if (typeof target === 'string') target = document.querySelector(target);
+    if (!target) {
+      target = document.querySelector('.app-grid') || document.querySelector('.grid');
+    }
+    if (!target) { alert('No chart grid found.'); return; }
+
+    // Create container div
+    var div = document.createElement('div');
+    target.appendChild(div);
+
+    var firstNum = numCols[0] ? numCols[0].name : cols[0].name;
+    var secondNum = numCols[1] ? numCols[1].name : firstNum;
+    var firstCat = catCols[0] ? catCols[0].name : cols[0].name;
+    var secondCat = catCols[1] ? catCols[1].name : firstCat;
+
+    switch (type) {
+      case 'bar':
+        SpottyFire.BarChart(div, ds, {
+          category: firstCat, value: firstNum,
+          aggregation: 'avg', showValues: true,
+          title: 'Avg ' + firstNum + ' by ' + firstCat,
+        });
+        break;
+      case 'scatter':
+        SpottyFire.ScatterPlot(div, ds, {
+          x: secondNum, y: firstNum,
+          colorBy: catCols.length > 0 ? firstCat : null,
+          pointSize: 7,
+          title: secondNum + ' vs ' + firstNum,
+        });
+        break;
+      case 'line':
+        SpottyFire.LineChart(div, ds, {
+          x: firstCat, y: [firstNum],
+          title: firstNum + ' by ' + firstCat,
+          smooth: true,
+        });
+        break;
+      case 'pie':
+        SpottyFire.PieChart(div, ds, {
+          category: firstCat, value: firstNum,
+          aggregation: 'sum', hole: 0.45, showPercent: true,
+          title: firstNum + ' by ' + firstCat,
+        });
+        break;
+      case 'heatmap':
+        SpottyFire.HeatMap(div, ds, {
+          x: firstCat, y: secondCat,
+          value: firstNum, aggregation: 'avg', showValues: true,
+          title: 'Avg ' + firstNum + ': ' + firstCat + ' x ' + secondCat,
+        });
+        break;
+      case 'table':
+        SpottyFire.DataTable(div, ds, {
+          columns: cols.map(function (c) { return c.name; }).slice(0, 10),
+          pageSize: 20,
+          title: 'Data Table',
+        });
+        break;
+    }
+
+    // Recalculate layout and resize (delay to ensure DOM is updated)
+    setTimeout(function () {
+      if (typeof window.recalcLayout === 'function') window.recalcLayout();
+      else BaseChart.resizeAll();
+    }, 50);
+  }
+
+  destroy() {}
+}
 // ─── MenuBar ────────────────────────────────────────────────
 class MenuBar {
   constructor(selector, dataStore, config) {
@@ -3850,6 +5020,12 @@ class MenuBar {
       { label: 'Export All as CSV', icon: '\u2913', action: function () { ds.downloadCSV('spottyfire-export.csv'); } },
       { label: 'Export Marked as CSV', icon: '\u2913', action: function () { ds.downloadCSV('spottyfire-marked.csv', { markedOnly: true }); },
         disabled: function () { return !ds._markingManager.hasMarking(); } },
+      '---',
+      { label: 'Clear Data', icon: '\uD83D\uDDD1', action: function () {
+        if (confirm('Clear all data? This cannot be undone.')) {
+          _clearData(ds);
+        }
+      }, disabled: function () { return ds.getRowCount() === 0; } },
     ];
     menus.appendChild(_buildMenu('File', fileItems));
 
@@ -3884,6 +5060,23 @@ class MenuBar {
         var fn = window.toggleAppSidebar || window.toggleRight;
         if (fn) fn('right');
       }
+    });
+
+    viewItems.push('---');
+
+    // Layouts
+    var layouts = [
+      { label: '1 Column', icon: '\u2587', cols: 1 },
+      { label: '2 Columns', icon: '\u2587\u2587', cols: 2 },
+      { label: '3 Columns', icon: '\u2587\u2587\u2587', cols: 3 },
+      { label: '2x2 Grid', icon: '\u2584\u2584', cols: 2 },
+      { label: '1 + 2 Split', icon: '\u2587\u2584', cols: '1-2' },
+    ];
+    layouts.forEach(function (l) {
+      viewItems.push({
+        label: l.label, icon: l.icon,
+        action: function () { _applyLayout(l.cols); },
+      });
     });
 
     viewItems.push('---');
@@ -4055,6 +5248,25 @@ function _buildMenu(label, items) {
   return wrap;
 }
 
+// ── Modal dialog helper ──
+function _showModal(title, contentFn) {
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:20000;display:flex;align-items:center;justify-content:center;';
+  var modal = document.createElement('div');
+  modal.style.cssText = 'background:var(--sl-panel-bg);border:1px solid var(--sl-panel-border);border-radius:12px;box-shadow:0 16px 48px rgba(0,0,0,0.5);padding:24px;min-width:400px;max-width:600px;max-height:80vh;overflow-y:auto;font-family:var(--sl-font);color:var(--sl-text-primary);';
+  var h = document.createElement('h3');
+  h.style.cssText = 'margin:0 0 16px;font-size:16px;font-weight:700;';
+  h.textContent = title;
+  modal.appendChild(h);
+  var body = document.createElement('div');
+  modal.appendChild(body);
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
+  contentFn(body, function () { overlay.remove(); });
+  return overlay;
+}
+
 function _triggerCSVUpload(ds) {
   var input = document.createElement('input');
   input.type = 'file';
@@ -4064,7 +5276,8 @@ function _triggerCSVUpload(ds) {
     if (!file) return;
     var reader = new FileReader();
     reader.onload = function (e) {
-      ds.loadCSV(e.target.result);
+      var csvText = e.target.result;
+      _handleNewData(ds, csvText, 'csv', file.name);
     };
     reader.readAsText(file);
   });
@@ -4082,12 +5295,217 @@ function _triggerJSONUpload(ds) {
     reader.onload = function (e) {
       try {
         var arr = JSON.parse(e.target.result);
-        if (Array.isArray(arr)) ds.loadJSON(arr);
-      } catch (err) { console.error('Invalid JSON:', err); }
+        if (Array.isArray(arr)) _handleNewData(ds, arr, 'json', file.name);
+      } catch (err) { alert('Invalid JSON file'); }
     };
     reader.readAsText(file);
   });
   input.click();
+}
+
+function _clearData(ds) {
+  ds._rows = [];
+  ds._columns = [];
+  ds._calculatedCols = {};
+  ds._calculatedFormulas = {};
+  ds._columnFormats = {};
+  ds._filterEngine._filters = {};
+  ds._markingManager._marked = new Set();
+  UndoManager.clear();
+  ds._emitEvent('data-loaded', { rowCount: 0 });
+}
+
+function _applyLayout(cols) {
+  var grid = document.querySelector('.app-grid') || document.querySelector('.grid');
+  if (!grid) return;
+
+  if (cols === '1-2') {
+    // First chart full width, rest 2 columns
+    grid.style.gridTemplateColumns = '1fr 1fr';
+    var children = grid.children;
+    for (var i = 0; i < children.length; i++) {
+      children[i].style.gridColumn = (i === 0) ? '1 / -1' : '';
+    }
+  } else {
+    grid.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
+    var children = grid.children;
+    for (var i = 0; i < children.length; i++) {
+      children[i].style.gridColumn = '';
+    }
+  }
+
+  // Resize all charts to fit new layout
+  BaseChart.resizeAll();
+}
+
+function _handleNewData(ds, data, type, filename) {
+  // If no existing data, just load directly
+  if (ds.getRowCount() === 0) {
+    if (type === 'csv') ds.loadCSV(data);
+    else ds.loadJSON(data);
+    return;
+  }
+
+  // Parse new data to inspect columns (without loading)
+  var newRows = [];
+  var newCols = [];
+  if (type === 'csv') {
+    var parsed = Papa.parse(data, { header: true, dynamicTyping: true, skipEmptyLines: true });
+    newRows = parsed.data;
+    if (newRows.length > 0) newCols = Object.keys(newRows[0]);
+  } else {
+    newRows = data;
+    if (newRows.length > 0) newCols = Object.keys(newRows[0]);
+  }
+
+  var existingCols = ds.getColumnNames();
+
+  // Show dialog
+  _showModal('Load Data — ' + filename, function (body, close) {
+    var info = document.createElement('p');
+    info.style.cssText = 'font-size:13px;color:var(--sl-text-secondary);margin:0 0 16px;';
+    info.textContent = 'New file has ' + newRows.length + ' rows and ' + newCols.length + ' columns. Current data has ' + ds.getRowCount() + ' rows.';
+    body.appendChild(info);
+
+    var btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;gap:10px;margin-bottom:16px;';
+
+    // Replace button
+    var replaceBtn = document.createElement('button');
+    replaceBtn.style.cssText = 'flex:1;padding:10px;background:var(--sl-accent);color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-family:var(--sl-font);';
+    replaceBtn.textContent = 'Replace existing data';
+    replaceBtn.addEventListener('click', function () {
+      close();
+      _clearData(ds);
+      if (type === 'csv') ds.loadCSV(data);
+      else ds.loadJSON(newRows);
+    });
+    btnRow.appendChild(replaceBtn);
+
+    // Append button
+    var appendBtn = document.createElement('button');
+    appendBtn.style.cssText = 'flex:1;padding:10px;background:transparent;color:var(--sl-text-primary);border:1px solid var(--sl-panel-border);border-radius:8px;font-size:13px;cursor:pointer;font-family:var(--sl-font);';
+    appendBtn.textContent = 'Append to existing data';
+    appendBtn.addEventListener('click', function () {
+      // Check column match
+      var matching = newCols.filter(function (c) { return existingCols.indexOf(c) >= 0; });
+      var missingInNew = existingCols.filter(function (c) { return newCols.indexOf(c) < 0 && c !== '__rowIndex'; });
+      var extraInNew = newCols.filter(function (c) { return existingCols.indexOf(c) < 0; });
+
+      if (missingInNew.length === 0 && extraInNew.length === 0) {
+        // Perfect match — just append
+        close();
+        _appendRows(ds, newRows);
+      } else {
+        // Show column mapping UI
+        body.innerHTML = '';
+        _showColumnMapper(body, close, ds, newRows, existingCols, newCols);
+      }
+    });
+    btnRow.appendChild(appendBtn);
+
+    body.appendChild(btnRow);
+
+    // Cancel
+    var cancelBtn = document.createElement('button');
+    cancelBtn.style.cssText = 'width:100%;padding:8px;background:transparent;color:var(--sl-text-muted);border:1px solid var(--sl-panel-border);border-radius:8px;font-size:12px;cursor:pointer;font-family:var(--sl-font);';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.addEventListener('click', close);
+    body.appendChild(cancelBtn);
+  });
+}
+
+function _showColumnMapper(body, close, ds, newRows, existingCols, newCols) {
+  var title = document.createElement('p');
+  title.style.cssText = 'font-size:13px;color:var(--sl-text-secondary);margin:0 0 12px;';
+  title.textContent = 'Columns don\'t match. Map new columns to existing ones:';
+  body.appendChild(title);
+
+  var table = document.createElement('div');
+  table.style.cssText = 'max-height:300px;overflow-y:auto;margin-bottom:16px;';
+
+  var mappings = {}; // newCol → existingCol or null
+
+  existingCols.filter(function (c) { return c !== '__rowIndex'; }).forEach(function (existCol) {
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--sl-panel-border);';
+
+    var label = document.createElement('span');
+    label.style.cssText = 'flex:1;font-size:12px;font-weight:600;color:var(--sl-text-primary);';
+    label.textContent = existCol;
+    row.appendChild(label);
+
+    var arrow = document.createElement('span');
+    arrow.style.cssText = 'color:var(--sl-text-muted);font-size:11px;';
+    arrow.textContent = '\u2190';
+    row.appendChild(arrow);
+
+    var select = document.createElement('select');
+    select.style.cssText = 'flex:1;background:var(--sl-panel-bg);border:1px solid var(--sl-panel-border);border-radius:6px;color:var(--sl-text-primary);padding:4px 6px;font-size:11px;font-family:var(--sl-font);';
+
+    // Skip option
+    var skipOpt = document.createElement('option');
+    skipOpt.value = '';
+    skipOpt.textContent = '(leave empty)';
+    select.appendChild(skipOpt);
+
+    // Auto-match by name
+    newCols.forEach(function (nc) {
+      var opt = document.createElement('option');
+      opt.value = nc;
+      opt.textContent = nc;
+      if (nc === existCol || nc.toLowerCase() === existCol.toLowerCase()) opt.selected = true;
+      select.appendChild(opt);
+    });
+
+    select.addEventListener('change', function () {
+      mappings[existCol] = select.value || null;
+    });
+    // Set initial mapping
+    var autoMatch = newCols.find(function (nc) { return nc === existCol || nc.toLowerCase() === existCol.toLowerCase(); });
+    mappings[existCol] = autoMatch || null;
+
+    row.appendChild(select);
+    table.appendChild(row);
+  });
+
+  body.appendChild(table);
+
+  // Apply button
+  var applyBtn = document.createElement('button');
+  applyBtn.style.cssText = 'width:100%;padding:10px;background:var(--sl-accent);color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-family:var(--sl-font);margin-bottom:8px;';
+  applyBtn.textContent = 'Append with mapping';
+  applyBtn.addEventListener('click', function () {
+    close();
+    // Map new rows to existing columns
+    var mappedRows = newRows.map(function (r) {
+      var mapped = {};
+      for (var existCol in mappings) {
+        var srcCol = mappings[existCol];
+        mapped[existCol] = srcCol ? r[srcCol] : null;
+      }
+      return mapped;
+    });
+    _appendRows(ds, mappedRows);
+  });
+  body.appendChild(applyBtn);
+
+  var cancelBtn = document.createElement('button');
+  cancelBtn.style.cssText = 'width:100%;padding:8px;background:transparent;color:var(--sl-text-muted);border:1px solid var(--sl-panel-border);border-radius:8px;font-size:12px;cursor:pointer;font-family:var(--sl-font);';
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.addEventListener('click', close);
+  body.appendChild(cancelBtn);
+}
+
+function _appendRows(ds, newRows) {
+  var startIdx = ds._rows.length;
+  newRows.forEach(function (r, i) {
+    r.__rowIndex = startIdx + i;
+    ds._rows.push(r);
+  });
+  ds._detectColumns();
+  ds._applyCalculatedColumns();
+  ds._emitEvent('data-loaded', { rowCount: ds._rows.length });
 }
 // ─── ColumnPanel ────────────────────────────────────────────
 class ColumnPanel {
@@ -4415,6 +5833,8 @@ var SpottyFire = {
   FormulaBar: function (sel, ds, cfg) { return new FormulaBar(sel, ds, cfg); },
   Toolbar: function (sel, ds, cfg) { return new Toolbar(sel, ds, cfg); },
   MenuBar: function (sel, ds, cfg) { return new MenuBar(sel, ds, cfg); },
+  TileEngine: TileEngine,
+  VizPanel: function (sel, ds, cfg) { return new VizPanel(sel, ds, cfg); },
   ColumnPanel: function (sel, ds, cfg) { return new ColumnPanel(sel, ds, cfg); },
 
   // Theme API

@@ -7,9 +7,24 @@ class FilterPanel {
     if (!this._container) throw new Error('FilterPanel: container not found');
 
     var self = this;
-    // Only re-render on data load, NOT on filter changes (prevents slider destruction mid-drag)
-    this._ds.on('data-loaded', function () { self.render(); });
+    // Re-render on data load — auto-fix columns if they don't match new data
+    this._ds.on('data-loaded', function () {
+      self._autoFixColumns();
+      self.render();
+    });
     this.render();
+  }
+
+  _autoFixColumns() {
+    if (!this._config.columns) return; // using all columns anyway
+    var available = this._ds.getColumnNames();
+    var valid = this._config.columns.filter(function (c) { return available.indexOf(c) >= 0; });
+    if (valid.length === 0) {
+      // All old columns gone — use all new columns
+      this._config.columns = null; // null = auto-detect all
+    } else if (valid.length < this._config.columns.length) {
+      this._config.columns = valid;
+    }
   }
 
   render() {

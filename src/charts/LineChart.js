@@ -68,15 +68,29 @@ class LineChart extends BaseChart {
         var gRows = groups[g];
         var color = theme.palette[gi % theme.palette.length];
         yCols.forEach(function (yCol) {
+          var showM = cfg.showMarkers || cfg.markerBy;
           var tr = {
             type: 'scatter',
-            mode: 'lines' + (cfg.showMarkers ? '+markers' : ''),
+            mode: 'lines' + (showM ? '+markers' : ''),
             name: groupBy ? g : yCol,
             x: gRows.map(function (r) { return r[xCol]; }),
             y: gRows.map(function (r) { return r[yCol]; }),
             customdata: gRows.map(function (r) { return r.__rowIndex; }),
             line: { color: color, width: 2, shape: smooth ? 'spline' : 'linear' },
           };
+          // Marker By: assign different symbols per category value
+          if (cfg.markerBy) {
+            var symbols = ['circle', 'square', 'diamond', 'cross', 'x', 'triangle-up', 'triangle-down', 'star', 'hexagon', 'pentagon'];
+            var markerVals = gRows.map(function (r) { return String(r[cfg.markerBy] || ''); });
+            var uniqueVals = {};
+            markerVals.forEach(function (v) { uniqueVals[v] = true; });
+            var valList = Object.keys(uniqueVals);
+            tr.marker = {
+              symbol: markerVals.map(function (v) { return symbols[valList.indexOf(v) % symbols.length]; }),
+              size: 8,
+              color: color,
+            };
+          }
           if (showArea) { tr.fill = 'tozeroy'; tr.fillcolor = color + '20'; }
           if (hasMarking) {
             var anyMarked = gRows.some(function (r) { return mm.isMarked(r.__rowIndex); });
@@ -88,15 +102,28 @@ class LineChart extends BaseChart {
     } else {
       yCols.forEach(function (yCol, yi) {
         var color = theme.palette[yi % theme.palette.length];
+        var showM = cfg.showMarkers || cfg.markerBy;
         var tr = {
           type: 'scatter',
-          mode: 'lines' + (cfg.showMarkers ? '+markers' : ''),
+          mode: 'lines' + (showM ? '+markers' : ''),
           name: yCol,
           x: rows.map(function (r) { return r[xCol]; }),
           y: rows.map(function (r) { return r[yCol]; }),
           customdata: rows.map(function (r) { return r.__rowIndex; }),
           line: { color: color, width: 2, shape: smooth ? 'spline' : 'linear' },
         };
+        if (cfg.markerBy) {
+          var symbols = ['circle', 'square', 'diamond', 'cross', 'x', 'triangle-up', 'triangle-down', 'star', 'hexagon', 'pentagon'];
+          var markerVals = rows.map(function (r) { return String(r[cfg.markerBy] || ''); });
+          var uniqueVals = {};
+          markerVals.forEach(function (v) { uniqueVals[v] = true; });
+          var valList = Object.keys(uniqueVals);
+          tr.marker = {
+            symbol: markerVals.map(function (v) { return symbols[valList.indexOf(v) % symbols.length]; }),
+            size: 8,
+            color: color,
+          };
+        }
         if (showArea) { tr.fill = 'tozeroy'; tr.fillcolor = color + '20'; }
         traces.push(tr);
       });

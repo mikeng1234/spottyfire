@@ -32,9 +32,19 @@ class BaseChart {
     this._onFilter = function () { self.refresh(); };
     this._onTheme = function () { self.refresh(); };
     this._onFormat = function () { self.refresh(); };
+    this._onDataLoaded = function () {
+      self._autoFixColumns();
+      self.refresh();
+      // Force all dropdowns to refresh their options and selected value
+      if (self._wrapper) {
+        var selects = self._wrapper.querySelectorAll('.sl-y-axis-bar select, .sl-x-axis-bar select, .sl-color-sidebar-body select');
+        selects.forEach(function (s) { s.dispatchEvent(new Event('focus')); });
+      }
+    };
 
     this._mm.on('marking-changed', this._onMarking);
     this._ds.on('filter-changed', this._onFilter);
+    this._ds.on('data-loaded', this._onDataLoaded);
 
     // Double-click empty area to clear marking (matches Plotly's reset behavior)
     // Deferred: bind after first Plotly render since .on() requires Plotly initialization
@@ -255,6 +265,88 @@ class BaseChart {
     return rows.map(function (r) { return self._buildTooltip(r); });
   }
 
+  // Auto-fix column references when data changes (new CSV loaded)
+  _autoFixColumns() {
+    var cols = this._ds.getColumnNames();
+    if (cols.length === 0) return;
+    var cfg = this._config;
+
+    // Find first numeric and first categorical (< 20 unique) columns
+    var rows = this._ds._rows;
+    var numCols = [];
+    var catCols = [];
+    cols.forEach(function (c) {
+      if (c === '__rowIndex') return;
+      if (rows.length > 0 && typeof rows[0][c] === 'number') {
+        numCols.push(c);
+      } else {
+        var unique = {};
+        for (var i = 0; i < Math.min(rows.length, 200); i++) {
+          if (rows[i][c] != null) unique[rows[i][c]] = true;
+        }
+        if (Object.keys(unique).length <= 20) catCols.push(c);
+      }
+    });
+
+    // Fix axes that reference columns not in the new data
+    var axisMap = {
+      x: numCols.length > 1 ? numCols[1] : numCols[0] || cols[0],
+      y: numCols[0] || cols[0],
+      category: catCols[0] || cols[0],
+      value: numCols[0] || cols[0],
+    };
+
+    var keysToCheck = ['x', 'y', 'category', 'value', 'colorBy', 'groupBy'];
+    var changed = false;
+    keysToCheck.forEach(function (key) {
+      if (cfg[key] && cols.indexOf(cfg[key]) < 0) {
+        if (key === 'colorBy' || key === 'groupBy') {
+          cfg[key] = null;
+        } else {
+          cfg[key] = axisMap[key] || cols[0];
+        }
+        changed = true;
+      }
+    });
+    // Handle y as array (LineChart)
+    if (Array.isArray(cfg.y)) {
+      cfg.y = cfg.y.map(function (c) {
+        if (cols.indexOf(c) < 0) { changed = true; return numCols[0] || cols[0]; }
+        return c;
+      });
+    }
+
+    // Fix DataTable columns array
+    if (Array.isArray(cfg.columns)) {
+      var validCols = cfg.columns.filter(function (c) { return cols.indexOf(c) >= 0; });
+      if (validCols.length === 0) {
+        // All old columns gone — use first 10 new columns
+        cfg.columns = cols.filter(function (c) { return c !== '__rowIndex'; }).slice(0, 10);
+        changed = true;
+      } else if (validCols.length < cfg.columns.length) {
+        cfg.columns = validCols;
+        changed = true;
+      }
+    }
+
+    // Auto-update title to reflect new columns
+    if (changed) {
+      var valCol = cfg.value || cfg.y || '';
+      if (Array.isArray(valCol)) valCol = valCol[0] || '';
+      var catCol = cfg.category || cfg.x || '';
+      var agg = cfg.aggregation || '';
+      if (agg) agg = agg.charAt(0).toUpperCase() + agg.slice(1) + ' ';
+      cfg.title = agg + valCol + (catCol ? ' by ' + catCol : '');
+      // Update displayed title
+      if (this._wrapper) {
+        var titleEl = this._wrapper.querySelector('.sl-panel-header span');
+        if (titleEl) titleEl.textContent = cfg.title;
+      }
+      // Update chart registry name
+      this._ds._registerChart(this);
+    }
+  }
+
   // Apply column format to a Plotly axis layout object
   _applyAxisFormat(axisLayout, colName) {
     var fmt = this._ds.getPlotlyAxisFormat(colName);
@@ -288,6 +380,7 @@ class BaseChart {
     this._ds._unregisterChart(this);
     this._mm.off('marking-changed', this._onMarking);
     this._ds.off('filter-changed', this._onFilter);
+    this._ds.off('data-loaded', this._onDataLoaded);
     this._ds.off('format-changed', this._onFormat);
     ThemeManager.off(this._onTheme);
     var div = this._getPlotDiv();
@@ -295,7 +388,36 @@ class BaseChart {
       try { Plotly.purge(div); } catch (e) {}
     }
     if (this._wrapper && this._wrapper.parentNode) {
-      this._wrapper.parentNode.removeChild(this._wrapper);
+      var parentContainer = this._wrapper.parentNode;
+      parentContainer.removeChild(this._wrapper);
+      // Remove empty container div from grid
+      if (parentContainer.children.length === 0 && parentContainer !== document.body) {
+        parentContainer.remove();
+      }
     }
+    // Recalculate layout and resize remaining charts
+    if (typeof window.recalcLayout === 'function') window.recalcLayout();
+    else BaseChart.resizeAll();
+  }
+
+  static resizeAll() {
+    // Trigger window resize event — Plotly's responsive:true hooks into this
+    // Multiple delays to ensure DOM has settled
+    [50, 200, 500].forEach(function (delay) {
+      setTimeout(function () {
+        window.dispatchEvent(new Event('resize'));
+      }, delay);
+    });
+  }
+
+  static _resizeAllLegacy() {
+    setTimeout(function () {
+      var plots = document.querySelectorAll('.sl-panel-body .js-plotly-plot');
+      plots.forEach(function (p) {
+        if (p.data) {
+          try { Plotly.Plots.resize(p); } catch (e) {}
+        }
+      });
+    }, 200);
   }
 }

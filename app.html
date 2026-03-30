@@ -76,15 +76,15 @@
     .app-container.active { display: flex; }
     .landing.hidden { display: none; }
 
-    .app-body { display: flex; flex: 1; min-height: 0; }
+    .app-body { display: flex; flex: 1; min-height: 0; overflow: hidden; }
     .app-sidebar-left {
-      width: 200px; min-width: 200px; background: var(--sl-panel-bg);
+      width: 260px; min-width: 260px; background: var(--sl-panel-bg);
       border-right: 1px solid var(--sl-panel-border); overflow-y: auto;
       transition: width 250ms ease, min-width 250ms ease;
     }
     .app-sidebar-left.collapsed { width: 0; min-width: 0; border-right: none; overflow: hidden; }
     .app-sidebar-right {
-      width: 220px; min-width: 220px; background: var(--sl-panel-bg);
+      width: 260px; min-width: 260px; background: var(--sl-panel-bg);
       border-left: 1px solid var(--sl-panel-border); overflow-y: auto;
       transition: width 250ms ease, min-width 250ms ease;
     }
@@ -111,16 +111,19 @@
     .app-tab-left { left: 0; border-left: none; border-radius: 0 6px 6px 0; transform: translateY(-50%) rotate(180deg); }
     .app-tab-right { right: 0; border-right: none; border-radius: 6px 0 0 6px; transform: translateY(-50%); }
     .app-tab-left.visible, .app-tab-right.visible { display: block; }
-    .app-main { flex: 1; overflow-y: auto; padding: 16px; min-width: 0; }
+    .app-main {
+      flex: 1; overflow: hidden; padding: 8px; min-width: 0;
+      display: flex; flex-direction: column;
+      height: calc(100vh - 36px); /* viewport minus menubar */
+    }
     .app-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      min-height: calc(100vh - 86px);
+      gap: 6px;
+      flex: 1;
+      min-height: 0;
     }
-    .app-chart { min-height: 340px; }
-    .app-full { grid-column: 1 / -1; }
-    .app-table { height: 300px; grid-column: 1 / -1; }
+    .app-grid > * { min-height: 0; min-width: 0; overflow: hidden; }
 
     /* Loading spinner */
     .loading {
@@ -175,9 +178,11 @@
     <div class="app-body">
       <div class="app-sidebar-left collapsed" id="sidebarLeft">
         <div class="app-sidebar-header">
-          <span>Columns</span>
+          <span>Tools</span>
           <button onclick="toggleAppSidebar('left')">&laquo;</button>
         </div>
+        <div id="vizPanel"></div>
+        <div style="border-top:1px solid var(--sl-panel-border);"></div>
         <div id="colPanel"></div>
       </div>
       <div class="app-main" id="main"></div>
@@ -200,6 +205,56 @@
       tab.classList.toggle('visible', c);
       setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 300);
     }
+
+    // Recalculate grid layout: 2 per row, odd last gets full width, equal row heights
+    function recalcLayout() {
+      var grid = document.querySelector('.app-grid');
+      if (!grid) return;
+
+      // Remove any existing empty state
+      var emptyMsg = grid.querySelector('.app-empty-state');
+      if (emptyMsg) emptyMsg.remove();
+
+      var children = Array.from(grid.children);
+      var count = children.length;
+
+      if (count === 0) {
+        // Show empty state
+        grid.style.gridTemplateRows = '1fr';
+        var empty = document.createElement('div');
+        empty.className = 'app-empty-state';
+        empty.style.cssText = 'grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--sl-text-muted);text-align:center;padding:40px;';
+        empty.innerHTML = '<div style="font-size:48px;margin-bottom:16px;opacity:0.3;">\uD83D\uDCCA</div>' +
+          '<div style="font-size:16px;font-weight:600;color:var(--sl-text-secondary);margin-bottom:8px;">No visualizations</div>' +
+          '<div style="font-size:13px;">Open the <strong>Tools</strong> panel on the left and click a visualization type to get started.</div>';
+        grid.appendChild(empty);
+        return;
+      }
+
+      // Calculate number of rows
+      var rows = Math.ceil(count / 2);
+
+      // Set equal row heights
+      grid.style.gridTemplateRows = 'repeat(' + rows + ', 1fr)';
+
+      // Assign grid positions
+      children.forEach(function (c, i) {
+        var row = Math.floor(i / 2) + 1;
+        var col = (i % 2) + 1;
+        var isLastOdd = (i === count - 1) && (count % 2 === 1);
+
+        c.style.gridRow = row;
+        c.style.gridColumn = isLastOdd ? '1 / -1' : col;
+      });
+
+      // Trigger Plotly resize
+      [100, 300, 600].forEach(function (d) {
+        setTimeout(function () { window.dispatchEvent(new Event('resize')); }, d);
+      });
+    }
+
+    // Make it globally accessible for VizPanel and destroy
+    window.recalcLayout = recalcLayout;
 
     SpottyFire.setTheme('obsidian');
 
@@ -261,7 +316,10 @@
           themes: ['obsidian', 'porcelain', 'midnight', 'arctic', 'neon', 'corporate']
         });
 
-        // Column panel (left)
+        // Viz panel (left, top)
+        SpottyFire.VizPanel('#vizPanel', ds, { target: '.app-grid' });
+
+        // Column panel (left, below viz)
         SpottyFire.ColumnPanel('#colPanel', ds);
 
         // Filter panel (right)
@@ -279,89 +337,69 @@
         if (catCols.length === 0) catCols = strCols;
 
         main.innerHTML = '';
+
+        // Title (outside grid so it doesn't take 1fr row)
+        var header = document.createElement('div');
+        header.style.cssText = 'padding:4px 4px 8px;flex-shrink:0;';
+        header.innerHTML = '<h2 style="font-size:16px;font-weight:700;color:var(--sl-text-primary);margin:0 0 2px;">' +
+          filename + '</h2><p style="font-size:11px;color:var(--sl-text-muted);margin:0;">' +
+          ds.getRowCount() + ' rows &middot; ' + cols.length + ' columns &middot; Click charts to cross-filter</p>';
+        main.appendChild(header);
+
         var grid = document.createElement('div');
         grid.className = 'app-grid';
 
-        // Title
-        var header = document.createElement('div');
-        header.className = 'app-full';
-        header.innerHTML = '<h2 style="font-size:18px;font-weight:700;color:var(--sl-text-primary);margin-bottom:4px;">' +
-          filename + '</h2><p style="font-size:12px;color:var(--sl-text-muted);">' +
-          ds.getRowCount() + ' rows &middot; ' + cols.length + ' columns &middot; Click charts to cross-filter</p>';
-        grid.appendChild(header);
+        function _addChart(createFn) {
+          var d = document.createElement('div');
+          grid.appendChild(d);
+          createFn(d);
+        }
 
         // Bar chart
         if (catCols.length > 0 && numCols.length > 0) {
-          var d = document.createElement('div');
-          d.className = 'app-chart';
-          grid.appendChild(d);
-          SpottyFire.BarChart(d, ds, {
-            category: catCols[0].name, value: numCols[0].name,
-            aggregation: 'avg', showValues: true,
-            title: 'Avg ' + numCols[0].name + ' by ' + catCols[0].name
+          _addChart(function (d) {
+            SpottyFire.BarChart(d, ds, {
+              category: catCols[0].name, value: numCols[0].name,
+              aggregation: 'avg', showValues: true,
+              title: 'Avg ' + numCols[0].name + ' by ' + catCols[0].name
+            });
           });
         }
 
         // Scatter
         if (numCols.length >= 2) {
-          var d = document.createElement('div');
-          d.className = 'app-chart';
-          grid.appendChild(d);
-          SpottyFire.ScatterPlot(d, ds, {
-            x: numCols[1].name, y: numCols[0].name,
-            colorBy: catCols.length > 0 ? catCols[0].name : null,
-            pointSize: 7,
-            title: numCols[1].name + ' vs ' + numCols[0].name
+          _addChart(function (d) {
+            SpottyFire.ScatterPlot(d, ds, {
+              x: numCols[1].name, y: numCols[0].name,
+              colorBy: catCols.length > 0 ? catCols[0].name : null,
+              pointSize: 7,
+              title: numCols[1].name + ' vs ' + numCols[0].name
+            });
           });
         }
 
         // Pie
         if (catCols.length > 0 && numCols.length > 0) {
-          var d = document.createElement('div');
-          d.className = 'app-chart';
-          grid.appendChild(d);
-          var pieCat = catCols.length > 1 ? catCols[1].name : catCols[0].name;
-          SpottyFire.PieChart(d, ds, {
-            category: pieCat, value: numCols[0].name,
-            aggregation: 'sum', hole: 0.45, showPercent: true,
-            title: numCols[0].name + ' by ' + pieCat
-          });
-        }
-
-        // Stacked bar
-        if (catCols.length >= 2 && numCols.length > 0) {
-          var d = document.createElement('div');
-          d.className = 'app-chart';
-          grid.appendChild(d);
-          SpottyFire.BarChart(d, ds, {
-            category: catCols[0].name, value: numCols[0].name,
-            aggregation: 'sum', colorBy: catCols[1].name,
-            title: numCols[0].name + ' by ' + catCols[0].name + ' & ' + catCols[1].name
-          });
-        }
-
-        // Heatmap
-        if (catCols.length >= 2 && numCols.length > 0) {
-          var d = document.createElement('div');
-          d.className = 'app-chart app-full';
-          grid.appendChild(d);
-          SpottyFire.HeatMap(d, ds, {
-            x: catCols[0].name, y: catCols[1].name,
-            value: numCols[0].name, aggregation: 'avg', showValues: true,
-            title: 'Avg ' + numCols[0].name + ': ' + catCols[0].name + ' x ' + catCols[1].name
+          _addChart(function (d) {
+            var pieCat = catCols.length > 1 ? catCols[1].name : catCols[0].name;
+            SpottyFire.PieChart(d, ds, {
+              category: pieCat, value: numCols[0].name,
+              aggregation: 'sum', hole: 0.45, showPercent: true,
+              title: numCols[0].name + ' by ' + pieCat
+            });
           });
         }
 
         // Table
-        var t = document.createElement('div');
-        t.className = 'app-table';
-        grid.appendChild(t);
-        SpottyFire.DataTable(t, ds, {
-          columns: cols.map(function (c) { return c.name; }).slice(0, 12),
-          pageSize: 20, title: 'Data Table'
+        _addChart(function (d) {
+          SpottyFire.DataTable(d, ds, {
+            columns: cols.map(function (c) { return c.name; }).slice(0, 12),
+            pageSize: 20, title: 'Data Table'
+          });
         });
 
         main.appendChild(grid);
+        recalcLayout();
       }
 
       if (Array.isArray(dataOrUrl)) {

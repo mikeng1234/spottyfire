@@ -18,6 +18,8 @@ var SpottyFire = {
   FormulaBar: function (sel, ds, cfg) { return new FormulaBar(sel, ds, cfg); },
   Toolbar: function (sel, ds, cfg) { return new Toolbar(sel, ds, cfg); },
   MenuBar: function (sel, ds, cfg) { return new MenuBar(sel, ds, cfg); },
+  TileEngine: TileEngine,
+  VizPanel: function (sel, ds, cfg) { return new VizPanel(sel, ds, cfg); },
   ColumnPanel: function (sel, ds, cfg) { return new ColumnPanel(sel, ds, cfg); },
 
   // Theme API
