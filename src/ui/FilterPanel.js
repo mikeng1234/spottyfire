@@ -17,6 +17,18 @@ class FilterPanel {
     var cols = this._config.columns || ds.getColumnNames().filter(function (c) { return c !== '__rowIndex'; });
     var container = this._container;
     container.innerHTML = '';
+
+    // Detect date columns by sampling values (matches YYYY-MM-DD pattern)
+    function _isDateColumn(colName, ds) {
+      var vals = ds.getColumnValues(colName);
+      if (vals.length === 0) return false;
+      var datePattern = /^\d{4}-\d{2}-\d{2}/;
+      var matches = 0;
+      for (var i = 0; i < Math.min(vals.length, 5); i++) {
+        if (datePattern.test(String(vals[i]))) matches++;
+      }
+      return matches >= Math.min(vals.length, 3);
+    }
     container.className = (container.className.indexOf('sl-filter-panel') < 0 ? container.className + ' ' : '') + 'sl-filter-panel';
 
     var activeFilters = ds.getActiveFilters();
@@ -187,6 +199,49 @@ class FilterPanel {
         });
 
         section.appendChild(track);
+      } else if (_isDateColumn(colName, ds)) {
+        // Date range picker
+        var dateVals = ds.getColumnValues(colName).sort();
+        var active = activeFilters[colName];
+        var minDate = active ? active.min : (dateVals[0] || '');
+        var maxDate = active ? active.max : (dateVals[dateVals.length - 1] || '');
+
+        var dateRow = document.createElement('div');
+        dateRow.style.cssText = 'display:flex;align-items:center;gap:4px;';
+
+        var fromInput = document.createElement('input');
+        fromInput.type = 'date';
+        fromInput.className = 'sl-filter-num';
+        fromInput.value = minDate;
+
+        var dateDash = document.createElement('span');
+        dateDash.style.cssText = 'color:var(--sl-text-muted);font-size:11px;';
+        dateDash.textContent = '\u2014';
+
+        var toInput = document.createElement('input');
+        toInput.type = 'date';
+        toInput.className = 'sl-filter-num';
+        toInput.value = maxDate;
+
+        function onDateChange() {
+          var from = fromInput.value;
+          var to = toInput.value;
+          if (from && to) {
+            // Filter rows where date string is between from and to
+            var allVals = ds.getColumnValues(colName);
+            var selected = allVals.filter(function (v) { return v >= from && v <= to; });
+            if (selected.length === allVals.length) ds.clearFilter(colName);
+            else ds.setFilter(colName, { type: 'values', selected: selected });
+          }
+        }
+
+        fromInput.addEventListener('change', onDateChange);
+        toInput.addEventListener('change', onDateChange);
+
+        dateRow.appendChild(fromInput);
+        dateRow.appendChild(dateDash);
+        dateRow.appendChild(toInput);
+        section.appendChild(dateRow);
       } else {
         // Checkbox list
         var values = ds.getColumnValues(colName);

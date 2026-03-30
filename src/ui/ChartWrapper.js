@@ -17,7 +17,7 @@ var ChartWrapper = (function () {
     return select;
   }
 
-  // Helper: axis dropdown that refreshes options from chart's current dataset columns on focus
+  // Helper: axis dropdown that refreshes options on focus
   function _makeAxisSelect(label, getVal, chartInst, onChange) {
     var select = document.createElement('select');
     select.title = label;
@@ -52,11 +52,11 @@ var ChartWrapper = (function () {
       '.sl-axis-select:hover,.sl-axis-select:focus{border-color:var(--sl-accent);color:var(--sl-text-primary);}' +
       '.sl-chart-layout{display:flex;flex:1;min-height:0;}' +
       '.sl-y-axis-bar{display:flex;align-items:center;justify-content:center;padding:4px;min-width:0;flex-shrink:0;}' +
-      '.sl-y-axis-bar select{writing-mode:vertical-lr;text-orientation:mixed;transform:rotate(180deg);max-height:100%;padding:6px 3px;}' +
+      '.sl-y-axis-bar select,.sl-y-axis-bar input{writing-mode:vertical-lr;text-orientation:mixed;transform:rotate(180deg);max-height:100%;padding:6px 3px;}' +
       '.sl-chart-column{display:flex;flex-direction:column;flex:1;min-width:0;min-height:0;}' +
       '.sl-x-axis-bar{display:flex;align-items:center;justify-content:center;padding:4px 8px;gap:4px;border-top:1px solid var(--sl-panel-border);}' +
       '.sl-x-axis-bar .sl-axis-label{font-size:10px;color:var(--sl-text-muted);text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;}' +
-      // Color sidebar
+      // Properties sidebar
       '.sl-color-sidebar{display:flex;flex-direction:column;border-left:1px solid var(--sl-panel-border);overflow:hidden;transition:width var(--sl-transition) ease,min-width var(--sl-transition) ease,max-width var(--sl-transition) ease;width:140px;min-width:140px;max-width:140px;flex-shrink:0;}' +
       '.sl-color-sidebar.sl-collapsed{width:28px !important;min-width:28px !important;max-width:28px !important;}' +
       '.sl-color-sidebar-toggle{background:none;border:none;border-bottom:1px solid var(--sl-panel-border);color:var(--sl-text-muted);cursor:pointer;padding:6px 4px;font-size:11px;font-family:var(--sl-font);text-align:center;white-space:nowrap;transition:color var(--sl-transition) ease;}' +
@@ -72,7 +72,7 @@ var ChartWrapper = (function () {
     document.head.appendChild(s);
   }
 
-  // Build the collapsible color sidebar
+  // Build the collapsible properties sidebar
   function _buildColorSidebar(chartInstance, colorByKey, colOptsWithNone) {
     var cfg = chartInstance._config;
     var ds = chartInstance._ds;
@@ -84,14 +84,14 @@ var ChartWrapper = (function () {
     // Toggle button
     var toggle = document.createElement('button');
     toggle.className = 'sl-color-sidebar-toggle';
-    toggle.textContent = '\u25C0 Color';
+    toggle.textContent = '\u25C0 Properties';
     toggle.addEventListener('click', function () {
       var collapsed = sidebar.classList.toggle('sl-collapsed');
       // Force reflow: hide → reflow → show to recalculate flex layout
       sidebar.style.display = 'none';
       void sidebar.offsetWidth;
       sidebar.style.display = '';
-      toggle.textContent = collapsed ? 'Color \u25B6' : '\u25C0 Color';
+      toggle.textContent = collapsed ? 'Properties \u25B6' : '\u25C0 Properties';
       // Tell Plotly to resize into the new space
       var plotDiv = sidebar.parentElement && sidebar.parentElement.querySelector('.sl-panel-body');
       if (plotDiv) {
@@ -312,6 +312,64 @@ var ChartWrapper = (function () {
     });
     actions.appendChild(clearBtn);
 
+    // Fullscreen toggle
+    var fsBtn = document.createElement('button');
+    fsBtn.textContent = '\u26F6';
+    fsBtn.title = 'Fullscreen';
+    fsBtn.addEventListener('click', function () {
+      var isFs = panel.classList.toggle('sl-fullscreen');
+      fsBtn.textContent = isFs ? '\u2716' : '\u26F6';
+      fsBtn.title = isFs ? 'Exit fullscreen' : 'Fullscreen';
+      document.body.style.overflow = isFs ? 'hidden' : '';
+      setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 100);
+    });
+    actions.appendChild(fsBtn);
+
+    // Settings cog menu
+    if (hasAxes) {
+      var cogWrap = document.createElement('div');
+      cogWrap.style.cssText = 'position:relative;display:inline-block;';
+
+      var cogBtn = document.createElement('button');
+      cogBtn.textContent = '\u2699';
+      cogBtn.title = 'Chart settings';
+      cogBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var open = cogMenu.style.display === 'block';
+        cogMenu.style.display = open ? 'none' : 'block';
+      });
+      cogWrap.appendChild(cogBtn);
+
+      var cogMenu = document.createElement('div');
+      cogMenu.className = 'sl-cog-menu';
+      cogMenu.style.display = 'none';
+
+      function _addToggle(label, defaultOn, onToggle) {
+        var row = document.createElement('label');
+        row.className = 'sl-cog-item';
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = defaultOn;
+        cb.addEventListener('change', function () { onToggle(cb.checked); });
+        row.appendChild(cb);
+        row.appendChild(document.createTextNode(' ' + label));
+        cogMenu.appendChild(row);
+        return cb;
+      }
+
+      // We'll reference these elements after they're created below
+      cogWrap._toggles = {};
+      cogWrap._addToggle = _addToggle;
+      cogWrap.appendChild(cogMenu);
+      actions.appendChild(cogWrap);
+
+      // Close menu on outside click
+      document.addEventListener('click', function () { cogMenu.style.display = 'none'; });
+      cogMenu.addEventListener('click', function (e) { e.stopPropagation(); });
+
+      panel._cogMenu = cogWrap;
+    }
+
     header.appendChild(actions);
     panel.appendChild(header);
 
@@ -388,7 +446,7 @@ var ChartWrapper = (function () {
       col.appendChild(xBar);
       layout.appendChild(col);
 
-      // Color sidebar (right side, collapsible)
+      // Properties sidebar (right side, collapsible)
       if (supportsColorBy) {
         var colorByKey = isLine ? 'groupBy' : 'colorBy';
         var sidebar = _buildColorSidebar(chartInstance, colorByKey, colOptsWithNone);
@@ -396,6 +454,37 @@ var ChartWrapper = (function () {
       }
 
       panel.appendChild(layout);
+
+      // Add settings toggles to cog menu (now that axis elements exist)
+      if (panel._cogMenu) {
+        var _addToggle = panel._cogMenu._addToggle;
+        var plotDiv = body; // the .sl-panel-body
+
+        _addToggle('Show X axis selector', true, function (on) {
+          xBar.style.display = on ? '' : 'none';
+          setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 50);
+        });
+
+        _addToggle('Show Y axis selector', true, function (on) {
+          yBar.style.display = on ? '' : 'none';
+          setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 50);
+        });
+
+        _addToggle('Show X axis label', true, function (on) {
+          var curLayout = plotDiv._fullLayout;
+          if (curLayout) {
+            Plotly.relayout(plotDiv, { 'xaxis.showticklabels': on, 'xaxis.title.text': on ? (chartInstance._config.x || chartInstance._config.category || '') : '' });
+          }
+        });
+
+        _addToggle('Show Y axis label', true, function (on) {
+          var curLayout = plotDiv._fullLayout;
+          if (curLayout) {
+            Plotly.relayout(plotDiv, { 'yaxis.showticklabels': on, 'yaxis.title.text': on ? (chartInstance._config.y || chartInstance._config.value || '') : '' });
+          }
+        });
+      }
+
     } else {
       // No axes (DataTable etc.) — simple body
       var body = document.createElement('div');

@@ -294,6 +294,12 @@ const ThemeManager = (function () {
         '.sl-panel-header-actions button:hover{color:var(--sl-text-primary);border-color:var(--sl-accent);}' +
         '.sl-panel-body{flex:1;padding:8px;min-height:0;position:relative;}' +
         '@keyframes sl-fadein{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}' +
+        '.sl-cog-menu{position:absolute;right:0;top:100%;background:var(--sl-panel-bg);border:1px solid var(--sl-panel-border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.3);padding:6px 0;min-width:180px;z-index:100;}' +
+        '.sl-cog-item{display:flex;align-items:center;gap:6px;padding:6px 12px;font-size:12px;color:var(--sl-text-secondary);cursor:pointer;transition:background 150ms ease;white-space:nowrap;}' +
+        '.sl-cog-item:hover{background:rgba(128,128,128,0.1);color:var(--sl-text-primary);}' +
+        '.sl-cog-item input{accent-color:var(--sl-accent);}' +
+        '.sl-fullscreen{position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;z-index:9999!important;border-radius:0!important;height:100vh!important;width:100vw!important;margin:0!important;}' +
+        '@media print{body{background:#fff!important;color:#000!important;}.sl-panel{break-inside:avoid;box-shadow:none!important;border:1px solid #ccc!important;page-break-inside:avoid;}.sl-panel-header-actions,.sl-toolbar,.sl-formula-bar,.sl-filter-panel,.sl-column-panel,.sl-color-sidebar,.sl-y-axis-bar,.sl-x-axis-bar,.sl-table-pager button,.sl-fullscreen,.filter-sidebar,.sidebar-left,.sidebar-right,.sidebar-tab{display:none!important;}.sl-panel-body{padding:4px!important;}.sl-table th,.sl-table td{border:1px solid #ccc!important;color:#000!important;}.sl-panel-header{border-bottom:1px solid #ccc!important;color:#000!important;}}' +
         '.sl-table-wrap{overflow:auto;max-height:100%;font-size:13px;}' +
         '.sl-table{width:100%;border-collapse:collapse;}' +
         '.sl-table th{position:sticky;top:0;background:var(--sl-panel-bg);text-align:left;padding:8px 12px;font-size:12px;font-weight:600;color:var(--sl-text-secondary);text-transform:uppercase;letter-spacing:0.5px;border-bottom:2px solid var(--sl-panel-border);cursor:pointer;user-select:none;white-space:nowrap;}' +
@@ -1508,6 +1514,32 @@ class BaseChart {
     }
   }
 
+  // Build tooltip text for a row using config.tooltipColumns or defaults
+  _buildTooltip(row) {
+    var cfg = this._config;
+    var ds = this._ds;
+    var cols = cfg.tooltipColumns;
+    if (!cols) {
+      // Default: show name/label-like columns
+      return row.Name || row.name || row.Label || row.label || row.Product || row.product || '';
+    }
+    return cols.map(function (c) {
+      var v = row[c];
+      var formatted = ds.formatValue(v, c);
+      return c + ': ' + formatted;
+    }).join('<br>');
+  }
+
+  // Build tooltip array for a set of rows
+  _buildTooltips(rows) {
+    var self = this;
+    var cfg = this._config;
+    if (!cfg.tooltipColumns) {
+      return rows.map(function (r) { return r.Name || r.name || r.Label || r.label || r.Product || r.product || ''; });
+    }
+    return rows.map(function (r) { return self._buildTooltip(r); });
+  }
+
   // Apply column format to a Plotly axis layout object
   _applyAxisFormat(axisLayout, colName) {
     var fmt = this._ds.getPlotlyAxisFormat(colName);
@@ -1807,6 +1839,7 @@ class ScatterPlot extends BaseChart {
     var cfg = this._config;
     if (this._validateNumericAxis(cfg.y, 'Y axis')) return;
     if (this._validateNumericAxis(cfg.x, 'X axis')) return;
+    var self = this;
     var theme = ThemeManager.getTheme();
     var rows = this._getLimitedRows();
     var hasMarking = this._mm.hasMarking();
@@ -1849,7 +1882,7 @@ class ScatterPlot extends BaseChart {
         groups[g].x.push(r[cfg.x]);
         groups[g].y.push(r[cfg.y]);
         groups[g].idx.push(r.__rowIndex);
-        groups[g].text.push(r.Name || r.name || '');
+        groups[g].text.push(self._buildTooltip(r));
         if (sizeBy) groups[g].sizes.push(+r[sizeBy] || pointSize);
       });
 
@@ -1905,7 +1938,7 @@ class ScatterPlot extends BaseChart {
         bucket.x.push(r[cfg.x]);
         bucket.y.push(r[cfg.y]);
         bucket.customdata.push(r.__rowIndex);
-        bucket.text.push(r.Name || r.name || '');
+        bucket.text.push(self._buildTooltip(r));
       });
 
       traces.push({
@@ -1923,7 +1956,7 @@ class ScatterPlot extends BaseChart {
       var x = [], y = [], idx = [], text = [];
       rows.forEach(function (r) {
         x.push(r[cfg.x]); y.push(r[cfg.y]); idx.push(r.__rowIndex);
-        text.push(r.Name || r.name || '');
+        text.push(self._buildTooltip(r));
       });
       traces.push({
         type: 'scattergl', mode: 'markers',
@@ -1939,6 +1972,13 @@ class ScatterPlot extends BaseChart {
     });
     this._applyAxisFormat(layout.xaxis, cfg.x);
     this._applyAxisFormat(layout.yaxis, cfg.y);
+
+    // Apply custom tooltip template if tooltipColumns specified
+    if (cfg.tooltipColumns) {
+      traces.forEach(function (t) {
+        t.hovertemplate = '%{text}<extra></extra>';
+      });
+    }
 
     var div = this._getPlotDiv();
     Plotly.react(div, traces, layout, this._plotlyConfig());
@@ -2585,7 +2625,7 @@ var ChartWrapper = (function () {
     return select;
   }
 
-  // Helper: axis dropdown that refreshes options from chart's current dataset columns on focus
+  // Helper: axis dropdown that refreshes options on focus
   function _makeAxisSelect(label, getVal, chartInst, onChange) {
     var select = document.createElement('select');
     select.title = label;
@@ -2620,11 +2660,11 @@ var ChartWrapper = (function () {
       '.sl-axis-select:hover,.sl-axis-select:focus{border-color:var(--sl-accent);color:var(--sl-text-primary);}' +
       '.sl-chart-layout{display:flex;flex:1;min-height:0;}' +
       '.sl-y-axis-bar{display:flex;align-items:center;justify-content:center;padding:4px;min-width:0;flex-shrink:0;}' +
-      '.sl-y-axis-bar select{writing-mode:vertical-lr;text-orientation:mixed;transform:rotate(180deg);max-height:100%;padding:6px 3px;}' +
+      '.sl-y-axis-bar select,.sl-y-axis-bar input{writing-mode:vertical-lr;text-orientation:mixed;transform:rotate(180deg);max-height:100%;padding:6px 3px;}' +
       '.sl-chart-column{display:flex;flex-direction:column;flex:1;min-width:0;min-height:0;}' +
       '.sl-x-axis-bar{display:flex;align-items:center;justify-content:center;padding:4px 8px;gap:4px;border-top:1px solid var(--sl-panel-border);}' +
       '.sl-x-axis-bar .sl-axis-label{font-size:10px;color:var(--sl-text-muted);text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;}' +
-      // Color sidebar
+      // Properties sidebar
       '.sl-color-sidebar{display:flex;flex-direction:column;border-left:1px solid var(--sl-panel-border);overflow:hidden;transition:width var(--sl-transition) ease,min-width var(--sl-transition) ease,max-width var(--sl-transition) ease;width:140px;min-width:140px;max-width:140px;flex-shrink:0;}' +
       '.sl-color-sidebar.sl-collapsed{width:28px !important;min-width:28px !important;max-width:28px !important;}' +
       '.sl-color-sidebar-toggle{background:none;border:none;border-bottom:1px solid var(--sl-panel-border);color:var(--sl-text-muted);cursor:pointer;padding:6px 4px;font-size:11px;font-family:var(--sl-font);text-align:center;white-space:nowrap;transition:color var(--sl-transition) ease;}' +
@@ -2640,7 +2680,7 @@ var ChartWrapper = (function () {
     document.head.appendChild(s);
   }
 
-  // Build the collapsible color sidebar
+  // Build the collapsible properties sidebar
   function _buildColorSidebar(chartInstance, colorByKey, colOptsWithNone) {
     var cfg = chartInstance._config;
     var ds = chartInstance._ds;
@@ -2652,14 +2692,14 @@ var ChartWrapper = (function () {
     // Toggle button
     var toggle = document.createElement('button');
     toggle.className = 'sl-color-sidebar-toggle';
-    toggle.textContent = '\u25C0 Color';
+    toggle.textContent = '\u25C0 Properties';
     toggle.addEventListener('click', function () {
       var collapsed = sidebar.classList.toggle('sl-collapsed');
       // Force reflow: hide → reflow → show to recalculate flex layout
       sidebar.style.display = 'none';
       void sidebar.offsetWidth;
       sidebar.style.display = '';
-      toggle.textContent = collapsed ? 'Color \u25B6' : '\u25C0 Color';
+      toggle.textContent = collapsed ? 'Properties \u25B6' : '\u25C0 Properties';
       // Tell Plotly to resize into the new space
       var plotDiv = sidebar.parentElement && sidebar.parentElement.querySelector('.sl-panel-body');
       if (plotDiv) {
@@ -2880,6 +2920,64 @@ var ChartWrapper = (function () {
     });
     actions.appendChild(clearBtn);
 
+    // Fullscreen toggle
+    var fsBtn = document.createElement('button');
+    fsBtn.textContent = '\u26F6';
+    fsBtn.title = 'Fullscreen';
+    fsBtn.addEventListener('click', function () {
+      var isFs = panel.classList.toggle('sl-fullscreen');
+      fsBtn.textContent = isFs ? '\u2716' : '\u26F6';
+      fsBtn.title = isFs ? 'Exit fullscreen' : 'Fullscreen';
+      document.body.style.overflow = isFs ? 'hidden' : '';
+      setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 100);
+    });
+    actions.appendChild(fsBtn);
+
+    // Settings cog menu
+    if (hasAxes) {
+      var cogWrap = document.createElement('div');
+      cogWrap.style.cssText = 'position:relative;display:inline-block;';
+
+      var cogBtn = document.createElement('button');
+      cogBtn.textContent = '\u2699';
+      cogBtn.title = 'Chart settings';
+      cogBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var open = cogMenu.style.display === 'block';
+        cogMenu.style.display = open ? 'none' : 'block';
+      });
+      cogWrap.appendChild(cogBtn);
+
+      var cogMenu = document.createElement('div');
+      cogMenu.className = 'sl-cog-menu';
+      cogMenu.style.display = 'none';
+
+      function _addToggle(label, defaultOn, onToggle) {
+        var row = document.createElement('label');
+        row.className = 'sl-cog-item';
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = defaultOn;
+        cb.addEventListener('change', function () { onToggle(cb.checked); });
+        row.appendChild(cb);
+        row.appendChild(document.createTextNode(' ' + label));
+        cogMenu.appendChild(row);
+        return cb;
+      }
+
+      // We'll reference these elements after they're created below
+      cogWrap._toggles = {};
+      cogWrap._addToggle = _addToggle;
+      cogWrap.appendChild(cogMenu);
+      actions.appendChild(cogWrap);
+
+      // Close menu on outside click
+      document.addEventListener('click', function () { cogMenu.style.display = 'none'; });
+      cogMenu.addEventListener('click', function (e) { e.stopPropagation(); });
+
+      panel._cogMenu = cogWrap;
+    }
+
     header.appendChild(actions);
     panel.appendChild(header);
 
@@ -2956,7 +3054,7 @@ var ChartWrapper = (function () {
       col.appendChild(xBar);
       layout.appendChild(col);
 
-      // Color sidebar (right side, collapsible)
+      // Properties sidebar (right side, collapsible)
       if (supportsColorBy) {
         var colorByKey = isLine ? 'groupBy' : 'colorBy';
         var sidebar = _buildColorSidebar(chartInstance, colorByKey, colOptsWithNone);
@@ -2964,6 +3062,37 @@ var ChartWrapper = (function () {
       }
 
       panel.appendChild(layout);
+
+      // Add settings toggles to cog menu (now that axis elements exist)
+      if (panel._cogMenu) {
+        var _addToggle = panel._cogMenu._addToggle;
+        var plotDiv = body; // the .sl-panel-body
+
+        _addToggle('Show X axis selector', true, function (on) {
+          xBar.style.display = on ? '' : 'none';
+          setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 50);
+        });
+
+        _addToggle('Show Y axis selector', true, function (on) {
+          yBar.style.display = on ? '' : 'none';
+          setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 50);
+        });
+
+        _addToggle('Show X axis label', true, function (on) {
+          var curLayout = plotDiv._fullLayout;
+          if (curLayout) {
+            Plotly.relayout(plotDiv, { 'xaxis.showticklabels': on, 'xaxis.title.text': on ? (chartInstance._config.x || chartInstance._config.category || '') : '' });
+          }
+        });
+
+        _addToggle('Show Y axis label', true, function (on) {
+          var curLayout = plotDiv._fullLayout;
+          if (curLayout) {
+            Plotly.relayout(plotDiv, { 'yaxis.showticklabels': on, 'yaxis.title.text': on ? (chartInstance._config.y || chartInstance._config.value || '') : '' });
+          }
+        });
+      }
+
     } else {
       // No axes (DataTable etc.) — simple body
       var body = document.createElement('div');
@@ -3005,6 +3134,18 @@ class FilterPanel {
     var cols = this._config.columns || ds.getColumnNames().filter(function (c) { return c !== '__rowIndex'; });
     var container = this._container;
     container.innerHTML = '';
+
+    // Detect date columns by sampling values (matches YYYY-MM-DD pattern)
+    function _isDateColumn(colName, ds) {
+      var vals = ds.getColumnValues(colName);
+      if (vals.length === 0) return false;
+      var datePattern = /^\d{4}-\d{2}-\d{2}/;
+      var matches = 0;
+      for (var i = 0; i < Math.min(vals.length, 5); i++) {
+        if (datePattern.test(String(vals[i]))) matches++;
+      }
+      return matches >= Math.min(vals.length, 3);
+    }
     container.className = (container.className.indexOf('sl-filter-panel') < 0 ? container.className + ' ' : '') + 'sl-filter-panel';
 
     var activeFilters = ds.getActiveFilters();
@@ -3175,6 +3316,49 @@ class FilterPanel {
         });
 
         section.appendChild(track);
+      } else if (_isDateColumn(colName, ds)) {
+        // Date range picker
+        var dateVals = ds.getColumnValues(colName).sort();
+        var active = activeFilters[colName];
+        var minDate = active ? active.min : (dateVals[0] || '');
+        var maxDate = active ? active.max : (dateVals[dateVals.length - 1] || '');
+
+        var dateRow = document.createElement('div');
+        dateRow.style.cssText = 'display:flex;align-items:center;gap:4px;';
+
+        var fromInput = document.createElement('input');
+        fromInput.type = 'date';
+        fromInput.className = 'sl-filter-num';
+        fromInput.value = minDate;
+
+        var dateDash = document.createElement('span');
+        dateDash.style.cssText = 'color:var(--sl-text-muted);font-size:11px;';
+        dateDash.textContent = '\u2014';
+
+        var toInput = document.createElement('input');
+        toInput.type = 'date';
+        toInput.className = 'sl-filter-num';
+        toInput.value = maxDate;
+
+        function onDateChange() {
+          var from = fromInput.value;
+          var to = toInput.value;
+          if (from && to) {
+            // Filter rows where date string is between from and to
+            var allVals = ds.getColumnValues(colName);
+            var selected = allVals.filter(function (v) { return v >= from && v <= to; });
+            if (selected.length === allVals.length) ds.clearFilter(colName);
+            else ds.setFilter(colName, { type: 'values', selected: selected });
+          }
+        }
+
+        fromInput.addEventListener('change', onDateChange);
+        toInput.addEventListener('change', onDateChange);
+
+        dateRow.appendChild(fromInput);
+        dateRow.appendChild(dateDash);
+        dateRow.appendChild(toInput);
+        section.appendChild(dateRow);
       } else {
         // Checkbox list
         var values = ds.getColumnValues(colName);
@@ -3599,6 +3783,166 @@ var SpottyFire = {
   UndoManager: UndoManager,
   undo: function () { UndoManager.undo(); },
   redo: function () { UndoManager.redo(); },
+
+  // ── Quick Create: auto-generates a full dashboard from data ──
+  // Usage:
+  //   SpottyFire.create('#app', data)
+  //   SpottyFire.create('#app', data, { theme: 'obsidian', title: 'My Dashboard' })
+  //   SpottyFire.create('#app', '/api/data.csv')  // CSV URL
+  create: function (selector, dataOrUrl, opts) {
+    opts = opts || {};
+    var container = typeof selector === 'string' ? document.querySelector(selector) : selector;
+    if (!container) throw new Error('SpottyFire.create: container not found');
+
+    var theme = opts.theme || 'midnight';
+    var title = opts.title || 'Dashboard';
+    ThemeManager.setTheme(theme);
+
+    var ds = new DataStore();
+
+    function _build() {
+      // Detect column types
+      var cols = ds.getColumns().filter(function (c) { return c.name !== '__rowIndex'; });
+      var numCols = cols.filter(function (c) { return c.type === 'number'; });
+      var strCols = cols.filter(function (c) { return c.type === 'string'; });
+      var allNames = cols.map(function (c) { return c.name; });
+
+      // Apply user-specified formats
+      if (opts.formats) {
+        for (var col in opts.formats) {
+          ds.setColumnFormat(col, opts.formats[col]);
+        }
+      }
+
+      // Build layout
+      container.innerHTML = '';
+      container.style.cssText = 'display:flex;min-height:100vh;';
+
+      // Filter sidebar (right)
+      var rightBar = document.createElement('div');
+      rightBar.style.cssText = 'width:220px;min-width:220px;background:var(--sl-panel-bg);border-left:1px solid var(--sl-panel-border);overflow-y:auto;order:2;';
+
+      var filterDiv = document.createElement('div');
+      rightBar.appendChild(filterDiv);
+
+      // Main area
+      var main = document.createElement('div');
+      main.style.cssText = 'flex:1;padding:20px;overflow-y:auto;order:1;min-width:0;';
+
+      // Title
+      var h1 = document.createElement('h1');
+      h1.style.cssText = 'font-size:22px;font-weight:700;margin:0 0 4px;color:var(--sl-text-primary);';
+      h1.textContent = title;
+      main.appendChild(h1);
+
+      var sub = document.createElement('p');
+      sub.style.cssText = 'font-size:13px;color:var(--sl-text-secondary);margin:0 0 16px;';
+      sub.textContent = ds.getRowCount() + ' rows \u00B7 ' + cols.length + ' columns. Click charts to cross-filter.';
+      main.appendChild(sub);
+
+      // Toolbar
+      var toolbarDiv = document.createElement('div');
+      main.appendChild(toolbarDiv);
+
+      // Chart grid
+      var grid = document.createElement('div');
+      grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;';
+
+      // Auto-pick best charts based on column types
+      var chartCount = 0;
+
+      // 1. Bar chart: first string col as category, first numeric as value
+      if (strCols.length > 0 && numCols.length > 0) {
+        var barDiv = document.createElement('div');
+        barDiv.style.minHeight = '360px';
+        grid.appendChild(barDiv);
+        SpottyFire.BarChart(barDiv, ds, {
+          category: strCols[0].name,
+          value: numCols[0].name,
+          aggregation: 'avg',
+          showValues: true,
+          title: 'Avg ' + numCols[0].name + ' by ' + strCols[0].name,
+        });
+        chartCount++;
+      }
+
+      // 2. Scatter plot: first two numeric cols
+      if (numCols.length >= 2) {
+        var scatterDiv = document.createElement('div');
+        scatterDiv.style.minHeight = '360px';
+        grid.appendChild(scatterDiv);
+        SpottyFire.ScatterPlot(scatterDiv, ds, {
+          x: numCols[1].name,
+          y: numCols[0].name,
+          colorBy: strCols.length > 0 ? strCols[0].name : null,
+          pointSize: 7,
+          title: numCols[1].name + ' vs ' + numCols[0].name,
+        });
+        chartCount++;
+      }
+
+      // 3. Pie chart: second string col (or first if only one), first numeric
+      if (strCols.length > 0 && numCols.length > 0) {
+        var pieDiv = document.createElement('div');
+        pieDiv.style.minHeight = '360px';
+        grid.appendChild(pieDiv);
+        var pieCat = strCols.length > 1 ? strCols[1].name : strCols[0].name;
+        SpottyFire.PieChart(pieDiv, ds, {
+          category: pieCat,
+          value: numCols[0].name,
+          aggregation: 'sum',
+          hole: 0.45,
+          showPercent: true,
+          title: numCols[0].name + ' by ' + pieCat,
+        });
+        chartCount++;
+      }
+
+      // 4. Stacked bar: if 2+ string cols, stack second on first
+      if (strCols.length >= 2 && numCols.length > 0) {
+        var stackDiv = document.createElement('div');
+        stackDiv.style.minHeight = '360px';
+        grid.appendChild(stackDiv);
+        SpottyFire.BarChart(stackDiv, ds, {
+          category: strCols[0].name,
+          value: numCols[0].name,
+          aggregation: 'sum',
+          colorBy: strCols[1].name,
+          title: numCols[0].name + ' by ' + strCols[0].name + ' & ' + strCols[1].name,
+        });
+        chartCount++;
+      }
+
+      // 5. Data table (full width)
+      var tableDiv = document.createElement('div');
+      tableDiv.style.cssText = 'grid-column:1/-1;height:320px;';
+      grid.appendChild(tableDiv);
+      SpottyFire.DataTable(tableDiv, ds, {
+        columns: allNames.slice(0, 10),
+        showOnlyMarked: false,
+        pageSize: 20,
+        title: 'Data Table',
+      });
+
+      main.appendChild(grid);
+      container.appendChild(main);
+      container.appendChild(rightBar);
+
+      // Initialize UI components
+      SpottyFire.Toolbar(toolbarDiv, ds, { showExport: true, showThemeToggle: true });
+      SpottyFire.FilterPanel(filterDiv, ds);
+    }
+
+    // Handle data: array, CSV URL, or CSV string
+    if (Array.isArray(dataOrUrl)) {
+      ds.loadJSON(dataOrUrl);
+      _build();
+    } else if (typeof dataOrUrl === 'string') {
+      ds.loadCSV(dataOrUrl).then(_build);
+    }
+
+    return ds;
+  },
 
   // Version
   version: '1.0.0',

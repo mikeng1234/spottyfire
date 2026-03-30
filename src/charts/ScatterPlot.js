@@ -11,6 +11,7 @@ class ScatterPlot extends BaseChart {
     var cfg = this._config;
     if (this._validateNumericAxis(cfg.y, 'Y axis')) return;
     if (this._validateNumericAxis(cfg.x, 'X axis')) return;
+    var self = this;
     var theme = ThemeManager.getTheme();
     var rows = this._getLimitedRows();
     var hasMarking = this._mm.hasMarking();
@@ -53,7 +54,7 @@ class ScatterPlot extends BaseChart {
         groups[g].x.push(r[cfg.x]);
         groups[g].y.push(r[cfg.y]);
         groups[g].idx.push(r.__rowIndex);
-        groups[g].text.push(r.Name || r.name || '');
+        groups[g].text.push(self._buildTooltip(r));
         if (sizeBy) groups[g].sizes.push(+r[sizeBy] || pointSize);
       });
 
@@ -109,7 +110,7 @@ class ScatterPlot extends BaseChart {
         bucket.x.push(r[cfg.x]);
         bucket.y.push(r[cfg.y]);
         bucket.customdata.push(r.__rowIndex);
-        bucket.text.push(r.Name || r.name || '');
+        bucket.text.push(self._buildTooltip(r));
       });
 
       traces.push({
@@ -127,7 +128,7 @@ class ScatterPlot extends BaseChart {
       var x = [], y = [], idx = [], text = [];
       rows.forEach(function (r) {
         x.push(r[cfg.x]); y.push(r[cfg.y]); idx.push(r.__rowIndex);
-        text.push(r.Name || r.name || '');
+        text.push(self._buildTooltip(r));
       });
       traces.push({
         type: 'scattergl', mode: 'markers',
@@ -143,6 +144,13 @@ class ScatterPlot extends BaseChart {
     });
     this._applyAxisFormat(layout.xaxis, cfg.x);
     this._applyAxisFormat(layout.yaxis, cfg.y);
+
+    // Apply custom tooltip template if tooltipColumns specified
+    if (cfg.tooltipColumns) {
+      traces.forEach(function (t) {
+        t.hovertemplate = '%{text}<extra></extra>';
+      });
+    }
 
     var div = this._getPlotDiv();
     Plotly.react(div, traces, layout, this._plotlyConfig());

@@ -205,6 +205,32 @@ class BaseChart {
     }
   }
 
+  // Build tooltip text for a row using config.tooltipColumns or defaults
+  _buildTooltip(row) {
+    var cfg = this._config;
+    var ds = this._ds;
+    var cols = cfg.tooltipColumns;
+    if (!cols) {
+      // Default: show name/label-like columns
+      return row.Name || row.name || row.Label || row.label || row.Product || row.product || '';
+    }
+    return cols.map(function (c) {
+      var v = row[c];
+      var formatted = ds.formatValue(v, c);
+      return c + ': ' + formatted;
+    }).join('<br>');
+  }
+
+  // Build tooltip array for a set of rows
+  _buildTooltips(rows) {
+    var self = this;
+    var cfg = this._config;
+    if (!cfg.tooltipColumns) {
+      return rows.map(function (r) { return r.Name || r.name || r.Label || r.label || r.Product || r.product || ''; });
+    }
+    return rows.map(function (r) { return self._buildTooltip(r); });
+  }
+
   // Apply column format to a Plotly axis layout object
   _applyAxisFormat(axisLayout, colName) {
     var fmt = this._ds.getPlotlyAxisFormat(colName);
