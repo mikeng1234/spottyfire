@@ -17,6 +17,7 @@ var SpottyFire = {
   FilterPanel: function (sel, ds, cfg) { return new FilterPanel(sel, ds, cfg); },
   FormulaBar: function (sel, ds, cfg) { return new FormulaBar(sel, ds, cfg); },
   Toolbar: function (sel, ds, cfg) { return new Toolbar(sel, ds, cfg); },
+  MenuBar: function (sel, ds, cfg) { return new MenuBar(sel, ds, cfg); },
   ColumnPanel: function (sel, ds, cfg) { return new ColumnPanel(sel, ds, cfg); },
 
   // Theme API
@@ -50,6 +51,9 @@ var SpottyFire = {
       var cols = ds.getColumns().filter(function (c) { return c.name !== '__rowIndex'; });
       var numCols = cols.filter(function (c) { return c.type === 'number'; });
       var strCols = cols.filter(function (c) { return c.type === 'string'; });
+      // Pick categorical columns with < 20 unique values (skip IDs, names)
+      var catCols = strCols.filter(function (c) { return ds.getColumnValues(c.name).length <= 20; });
+      if (catCols.length === 0) catCols = strCols;
       var allNames = cols.map(function (c) { return c.name; });
 
       // Apply user-specified formats
@@ -97,16 +101,16 @@ var SpottyFire = {
       var chartCount = 0;
 
       // 1. Bar chart: first string col as category, first numeric as value
-      if (strCols.length > 0 && numCols.length > 0) {
+      if (catCols.length > 0 && numCols.length > 0) {
         var barDiv = document.createElement('div');
         barDiv.style.minHeight = '360px';
         grid.appendChild(barDiv);
         SpottyFire.BarChart(barDiv, ds, {
-          category: strCols[0].name,
+          category: catCols[0].name,
           value: numCols[0].name,
           aggregation: 'avg',
           showValues: true,
-          title: 'Avg ' + numCols[0].name + ' by ' + strCols[0].name,
+          title: 'Avg ' + numCols[0].name + ' by ' + catCols[0].name,
         });
         chartCount++;
       }
@@ -119,7 +123,7 @@ var SpottyFire = {
         SpottyFire.ScatterPlot(scatterDiv, ds, {
           x: numCols[1].name,
           y: numCols[0].name,
-          colorBy: strCols.length > 0 ? strCols[0].name : null,
+          colorBy: catCols.length > 0 ? catCols[0].name : null,
           pointSize: 7,
           title: numCols[1].name + ' vs ' + numCols[0].name,
         });
@@ -127,11 +131,11 @@ var SpottyFire = {
       }
 
       // 3. Pie chart: second string col (or first if only one), first numeric
-      if (strCols.length > 0 && numCols.length > 0) {
+      if (catCols.length > 0 && numCols.length > 0) {
         var pieDiv = document.createElement('div');
         pieDiv.style.minHeight = '360px';
         grid.appendChild(pieDiv);
-        var pieCat = strCols.length > 1 ? strCols[1].name : strCols[0].name;
+        var pieCat = catCols.length > 1 ? catCols[1].name : catCols[0].name;
         SpottyFire.PieChart(pieDiv, ds, {
           category: pieCat,
           value: numCols[0].name,
@@ -144,16 +148,16 @@ var SpottyFire = {
       }
 
       // 4. Stacked bar: if 2+ string cols, stack second on first
-      if (strCols.length >= 2 && numCols.length > 0) {
+      if (catCols.length >= 2 && numCols.length > 0) {
         var stackDiv = document.createElement('div');
         stackDiv.style.minHeight = '360px';
         grid.appendChild(stackDiv);
         SpottyFire.BarChart(stackDiv, ds, {
-          category: strCols[0].name,
+          category: catCols[0].name,
           value: numCols[0].name,
           aggregation: 'sum',
-          colorBy: strCols[1].name,
-          title: numCols[0].name + ' by ' + strCols[0].name + ' & ' + strCols[1].name,
+          colorBy: catCols[1].name,
+          title: numCols[0].name + ' by ' + catCols[0].name + ' & ' + catCols[1].name,
         });
         chartCount++;
       }

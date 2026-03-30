@@ -15,8 +15,10 @@ cat src/charts/LineChart.js >> dist/spottyfire.js
 cat src/charts/PieChart.js >> dist/spottyfire.js
 cat src/charts/HeatMap.js >> dist/spottyfire.js
 cat src/charts/DataTable.js >> dist/spottyfire.js
+cat src/ui/ContextMenu.js >> dist/spottyfire.js
 cat src/ui/ChartWrapper.js >> dist/spottyfire.js
 cat src/ui/FilterPanel.js >> dist/spottyfire.js
+cat src/ui/MenuBar.js >> dist/spottyfire.js
 cat src/ui/ColumnPanel.js >> dist/spottyfire.js
 cat src/ui/FormulaBar.js >> dist/spottyfire.js
 cat src/index.js >> dist/spottyfire.js

@@ -155,6 +155,21 @@ Current version: **1.0.0**
 - [ ] Migration guide from Spotfire
 - [ ] Cookbook / recipes (common dashboard patterns)
 
+### Standalone App (SpottyFire Studio)
+- [x] File > Upload CSV / JSON (drag & drop)
+- [x] Menu bar (File, Edit, View)
+- [x] Auto-detect columns and generate dashboard
+- [ ] Standalone app landing page (drag & drop → instant dashboard)
+- [ ] Save/Load project files (.spottyfire JSON)
+- [ ] Drag-and-drop chart builder (add/remove/resize panels)
+- [ ] Data preview / schema editor before charting
+- [ ] Electron desktop app packaging (.exe / .dmg)
+- [ ] PWA support (manifest.json + service worker for offline use)
+- [ ] Tauri packaging (lightweight native app)
+- [ ] User accounts + cloud save (Supabase backend)
+- [ ] Shareable dashboard links (export config as URL)
+- [ ] Freemium model: free tier (local only) + paid tier (cloud save, collaboration)
+
 ### Ecosystem
 - [ ] React wrapper component
 - [ ] Vue wrapper component

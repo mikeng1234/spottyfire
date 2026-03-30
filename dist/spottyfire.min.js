@@ -286,18 +286,40 @@ const ThemeManager = (function () {
       var s = document.createElement('style');
       s.id = 'sl-base-css';
       s.textContent =
-        '.sl-panel{background:var(--sl-panel-bg);border:1px solid var(--sl-panel-border);border-radius:12px;box-shadow:var(--sl-panel-shadow);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow var(--sl-transition) ease,border-color var(--sl-transition) ease;animation:sl-fadein 400ms ease both;}' +
+        '.sl-panel{background:var(--sl-panel-bg);border:1px solid var(--sl-panel-border);border-radius:12px;box-shadow:var(--sl-panel-shadow);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow var(--sl-transition) ease,border-color var(--sl-transition) ease;animation:sl-fadein 400ms ease both;min-width:0;}' +
         '.sl-panel:hover{border-color:var(--sl-accent);box-shadow:var(--sl-panel-shadow),0 0 0 1px var(--sl-accent);}' +
         '.sl-panel-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--sl-panel-border);font-size:14px;font-weight:600;color:var(--sl-text-primary);user-select:none;}' +
         '.sl-panel-header-actions{display:flex;gap:6px;align-items:center;}' +
         '.sl-panel-header-actions button{background:none;border:1px solid var(--sl-panel-border);border-radius:6px;color:var(--sl-text-muted);cursor:pointer;padding:4px 8px;font-size:11px;transition:all var(--sl-transition) ease;}' +
         '.sl-panel-header-actions button:hover{color:var(--sl-text-primary);border-color:var(--sl-accent);}' +
-        '.sl-panel-body{flex:1;padding:8px;min-height:0;position:relative;}' +
+        '.sl-panel-body{flex:1;padding:8px;min-height:0;min-width:0;position:relative;overflow:hidden;}' +
+        '.sl-panel-body .js-plotly-plot,.sl-panel-body .plot-container,.sl-panel-body .svg-container{width:100%!important;height:100%!important;}' +
         '@keyframes sl-fadein{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}' +
+        '.sl-menubar{display:flex;align-items:center;justify-content:space-between;background:var(--sl-panel-bg);border-bottom:1px solid var(--sl-panel-border);padding:0 8px;height:36px;font-family:var(--sl-font);user-select:none;flex-shrink:0;}' +
+        '.sl-menubar-menus{display:flex;align-items:center;gap:0;}' +
+        '.sl-menu-wrap{position:relative;}' +
+        '.sl-menu-trigger{background:none;border:none;color:var(--sl-text-secondary);padding:8px 12px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--sl-font);transition:all 150ms ease;}' +
+        '.sl-menu-trigger:hover{color:var(--sl-text-primary);background:rgba(128,128,128,0.1);}' +
+        '.sl-menu-dropdown{position:absolute;top:100%;left:0;background:var(--sl-panel-bg);border:1px solid var(--sl-panel-border);border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,0.4);padding:4px 0;min-width:220px;z-index:10000;}' +
+        '.sl-menubar-actions{display:flex;align-items:center;gap:4px;}' +
+        '.sl-menubar-btn{background:none;border:1px solid transparent;border-radius:5px;color:var(--sl-text-muted);cursor:pointer;padding:4px 8px;font-size:14px;transition:all 150ms ease;font-family:var(--sl-font);}' +
+        '.sl-menubar-btn:hover:not(:disabled){color:var(--sl-text-primary);border-color:var(--sl-panel-border);background:rgba(128,128,128,0.08);}' +
+        '.sl-menubar-btn:disabled{opacity:0.25;cursor:default;}' +
+        '.sl-menubar-sep{width:1px;height:16px;background:var(--sl-panel-border);margin:0 4px;}' +
+        '.sl-menubar-info{font-size:11px;color:var(--sl-text-muted);padding:0 8px;white-space:nowrap;}' +
+        '.sl-context-menu{position:fixed;z-index:10000;background:var(--sl-panel-bg);border:1px solid var(--sl-panel-border);border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,0.4);padding:4px 0;min-width:200px;font-family:var(--sl-font);}' +
+        '.sl-ctx-item{display:flex;align-items:center;gap:8px;padding:7px 14px;font-size:12px;color:var(--sl-text-primary);cursor:pointer;transition:background 120ms ease;user-select:none;}' +
+        '.sl-ctx-item:hover{background:color-mix(in srgb,var(--sl-accent) 15%,transparent);}' +
+        '.sl-ctx-disabled{opacity:0.35;cursor:default;pointer-events:none;}' +
+        '.sl-ctx-icon{width:16px;text-align:center;font-size:13px;flex-shrink:0;}' +
+        '.sl-ctx-shortcut{margin-left:auto;font-size:10px;color:var(--sl-text-muted);padding-left:16px;}' +
+        '.sl-ctx-separator{height:1px;background:var(--sl-panel-border);margin:4px 8px;}' +
         '.sl-cog-menu{position:absolute;right:0;top:100%;background:var(--sl-panel-bg);border:1px solid var(--sl-panel-border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.3);padding:6px 0;min-width:180px;z-index:100;}' +
         '.sl-cog-item{display:flex;align-items:center;gap:6px;padding:6px 12px;font-size:12px;color:var(--sl-text-secondary);cursor:pointer;transition:background 150ms ease;white-space:nowrap;}' +
         '.sl-cog-item:hover{background:rgba(128,128,128,0.1);color:var(--sl-text-primary);}' +
         '.sl-cog-item input{accent-color:var(--sl-accent);}' +
+        '.sl-resize-handle{height:6px;cursor:ns-resize;background:transparent;transition:background 150ms ease;flex-shrink:0;}' +
+        '.sl-resize-handle:hover,.sl-resize-handle:active{background:var(--sl-accent);opacity:0.4;border-radius:0 0 12px 12px;}' +
         '.sl-fullscreen{position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;z-index:9999!important;border-radius:0!important;height:100vh!important;width:100vw!important;margin:0!important;}' +
         '@media print{body{background:#fff!important;color:#000!important;}.sl-panel{break-inside:avoid;box-shadow:none!important;border:1px solid #ccc!important;page-break-inside:avoid;}.sl-panel-header-actions,.sl-toolbar,.sl-formula-bar,.sl-filter-panel,.sl-column-panel,.sl-color-sidebar,.sl-y-axis-bar,.sl-x-axis-bar,.sl-table-pager button,.sl-fullscreen,.filter-sidebar,.sidebar-left,.sidebar-right,.sidebar-tab{display:none!important;}.sl-panel-body{padding:4px!important;}.sl-table th,.sl-table td{border:1px solid #ccc!important;color:#000!important;}.sl-panel-header{border-bottom:1px solid #ccc!important;color:#000!important;}}' +
         '.sl-table-wrap{overflow:auto;max-height:100%;font-size:13px;}' +
@@ -364,6 +386,22 @@ const ThemeManager = (function () {
   // Apply default theme CSS on load
   if (typeof document !== 'undefined') {
     _applyCSS(_current);
+  }
+
+  // Global window resize handler — force all Plotly charts to fit their containers
+  if (typeof window !== 'undefined') {
+    var _resizeTimer = null;
+    window.addEventListener('resize', function () {
+      clearTimeout(_resizeTimer);
+      _resizeTimer = setTimeout(function () {
+        var plots = document.querySelectorAll('.sl-panel-body .js-plotly-plot');
+        plots.forEach(function (p) {
+          if (p.data) {
+            try { Plotly.Plots.resize(p); } catch (e) {}
+          }
+        });
+      }, 250);
+    });
   }
 
   return {
@@ -1351,6 +1389,30 @@ class BaseChart {
 
     this._ds.on('format-changed', this._onFormat);
     ThemeManager.on(this._onTheme);
+
+    // Right-click context menu
+    var plotDiv = this._getPlotDiv();
+    if (plotDiv) {
+      plotDiv.addEventListener('contextmenu', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        // Try to extract point data from Plotly's hover info
+        var pointData = null;
+        var hoverLayer = plotDiv.querySelector('.hoverlayer');
+        // Use Plotly's internal hover data if available
+        if (plotDiv._fullLayout && plotDiv._hoverdata && plotDiv._hoverdata.length > 0) {
+          var hd = plotDiv._hoverdata[0];
+          if (hd.x != null || hd.y != null) {
+            var cfg = self._config;
+            var catCol = cfg.category || cfg.x;
+            var valCol = cfg.value || cfg.y;
+            pointData = { column: catCol, value: hd.x };
+          }
+        }
+        var items = ContextMenu.buildChartItems(self, pointData);
+        ContextMenu.show(e.clientX, e.clientY, items);
+      });
+    }
   }
 
   getConfig() { return Object.assign({}, this._config); }
@@ -1565,7 +1627,7 @@ class BaseChart {
     return {
       displaylogo: false,
       responsive: true,
-      modeBarButtonsToRemove: ['toImage', 'sendDataToCloud'],
+      modeBarButtonsToRemove: ['toImage', 'sendDataToCloud', 'autoScale2d'],
     };
   }
 
@@ -2606,6 +2668,254 @@ class DataTable extends BaseChart {
 
   _onMarkingChanged() { this.refresh(); }
 }
+// ─── ContextMenu ────────────────────────────────────────────
+var ContextMenu = (function () {
+  var _menu = null;
+  var _visible = false;
+  var _justShown = false;
+
+  function _create() {
+    if (_menu) return _menu;
+    _menu = document.createElement('div');
+    _menu.className = 'sl-context-menu';
+    _menu.style.display = 'none';
+    document.body.appendChild(_menu);
+
+    // Close on any click outside (delayed to avoid closing immediately after show)
+    document.addEventListener('click', function () { hide(); });
+    document.addEventListener('contextmenu', function () {
+      // Don't hide if we just showed — _justShown flag prevents race
+      if (!_justShown) hide();
+      _justShown = false;
+    });
+    window.addEventListener('scroll', function () { hide(); }, true);
+
+    return _menu;
+  }
+
+  function show(x, y, items) {
+    var menu = _create();
+    menu.innerHTML = '';
+
+    items.forEach(function (item) {
+      if (item === '---') {
+        var sep = document.createElement('div');
+        sep.className = 'sl-ctx-separator';
+        menu.appendChild(sep);
+        return;
+      }
+
+      var row = document.createElement('div');
+      row.className = 'sl-ctx-item';
+      if (item.disabled) row.classList.add('sl-ctx-disabled');
+
+      if (item.icon) {
+        var icon = document.createElement('span');
+        icon.className = 'sl-ctx-icon';
+        icon.textContent = item.icon;
+        row.appendChild(icon);
+      }
+
+      var label = document.createElement('span');
+      label.textContent = item.label;
+      row.appendChild(label);
+
+      if (item.shortcut) {
+        var shortcut = document.createElement('span');
+        shortcut.className = 'sl-ctx-shortcut';
+        shortcut.textContent = item.shortcut;
+        row.appendChild(shortcut);
+      }
+
+      if (!item.disabled) {
+        row.addEventListener('click', function (e) {
+          e.stopPropagation();
+          hide();
+          if (item.action) item.action();
+        });
+      }
+
+      menu.appendChild(row);
+    });
+
+    // Position
+    menu.style.display = 'block';
+    var mw = menu.offsetWidth;
+    var mh = menu.offsetHeight;
+    var vw = window.innerWidth;
+    var vh = window.innerHeight;
+    menu.style.left = (x + mw > vw ? vw - mw - 8 : x) + 'px';
+    menu.style.top = (y + mh > vh ? vh - mh - 8 : y) + 'px';
+    _visible = true;
+    _justShown = true;
+  }
+
+  function hide() {
+    if (_menu) {
+      _menu.style.display = 'none';
+      _visible = false;
+    }
+  }
+
+  function isVisible() { return _visible; }
+
+  // Build standard chart context menu items
+  function buildChartItems(chartInstance, pointData) {
+    var ds = chartInstance._ds;
+    var mm = chartInstance._mm;
+    var cfg = chartInstance._config;
+    var items = [];
+
+    // If a data point was right-clicked
+    if (pointData && pointData.value != null) {
+      var col = pointData.column;
+      var val = pointData.value;
+      var displayVal = ds.formatValue(val, col);
+      if (String(displayVal).length > 30) displayVal = String(displayVal).substring(0, 27) + '...';
+
+      items.push({
+        icon: '\u2714', label: 'Mark "' + displayVal + '"',
+        action: function () {
+          var rows = ds.getFilteredRows();
+          var indices = [];
+          rows.forEach(function (r) {
+            if (String(r[col]) === String(val)) indices.push(r.__rowIndex);
+          });
+          mm.setMarking(indices, chartInstance._id);
+        }
+      });
+
+      items.push({
+        icon: '\u229E', label: 'Add "' + displayVal + '" to marking',
+        action: function () {
+          var rows = ds.getFilteredRows();
+          var indices = [];
+          rows.forEach(function (r) {
+            if (String(r[col]) === String(val)) indices.push(r.__rowIndex);
+          });
+          mm.addToMarking(indices, chartInstance._id);
+        }
+      });
+
+      items.push('---');
+
+      items.push({
+        icon: '\uD83D\uDD0D', label: 'Filter to "' + displayVal + '"',
+        action: function () {
+          ds.setFilter(col, { type: 'values', selected: [val] });
+        }
+      });
+
+      items.push({
+        icon: '\u2716', label: 'Exclude "' + displayVal + '"',
+        action: function () {
+          var allVals = ds.getColumnValues(col);
+          var remaining = allVals.filter(function (v) { return String(v) !== String(val); });
+          ds.setFilter(col, { type: 'values', selected: remaining });
+        }
+      });
+
+      items.push('---');
+
+      items.push({
+        icon: '\uD83D\uDCCB', label: 'Copy value',
+        action: function () {
+          if (navigator.clipboard) {
+            navigator.clipboard.writeText(String(val));
+          }
+        }
+      });
+
+      items.push('---');
+    }
+
+    // Batch actions on marked data
+    if (mm.hasMarking()) {
+      var markedCount = mm.getMarkedIndices().size;
+      items.push({
+        icon: '\uD83D\uDD0D', label: 'Filter to marked (' + markedCount + ' rows)',
+        action: function () {
+          // Get unique values per string column from marked rows
+          var marked = mm.getMarkedIndices();
+          var rows = ds.getFilteredRows();
+          var markedRows = rows.filter(function (r) { return marked.has(r.__rowIndex); });
+          // For each string column, collect unique values in marked set
+          var cols = ds.getColumns();
+          cols.forEach(function (c) {
+            if (c.type !== 'number' && c.name !== '__rowIndex') {
+              var vals = {};
+              markedRows.forEach(function (r) { if (r[c.name] != null) vals[String(r[c.name])] = true; });
+              var selected = Object.keys(vals);
+              var allVals = ds.getColumnValues(c.name);
+              if (selected.length < allVals.length) {
+                ds.setFilter(c.name, { type: 'values', selected: selected });
+              }
+            }
+          });
+        }
+      });
+
+      items.push({
+        icon: '\u2716', label: 'Exclude marked (' + markedCount + ' rows)',
+        action: function () {
+          var marked = mm.getMarkedIndices();
+          var rows = ds.getFilteredRows();
+          var markedRows = rows.filter(function (r) { return marked.has(r.__rowIndex); });
+          var cols = ds.getColumns();
+          cols.forEach(function (c) {
+            if (c.type !== 'number' && c.name !== '__rowIndex') {
+              var markedVals = {};
+              markedRows.forEach(function (r) { if (r[c.name] != null) markedVals[String(r[c.name])] = true; });
+              var allVals = ds.getColumnValues(c.name);
+              var remaining = allVals.filter(function (v) { return !markedVals[v]; });
+              if (remaining.length < allVals.length && remaining.length > 0) {
+                ds.setFilter(c.name, { type: 'values', selected: remaining });
+              }
+            }
+          });
+        }
+      });
+
+      items.push('---');
+    }
+
+    // General actions
+    items.push({
+      icon: '\u21A9', label: 'Clear marking',
+      shortcut: 'Esc',
+      disabled: !mm.hasMarking(),
+      action: function () { mm.clearMarking(); }
+    });
+
+    items.push({
+      icon: '\u2205', label: 'Clear all filters',
+      disabled: Object.keys(ds.getActiveFilters()).length === 0,
+      action: function () { ds.clearAllFilters(); }
+    });
+
+    items.push('---');
+
+    items.push({
+      icon: '\u2913', label: 'Export visible data',
+      action: function () { ds.downloadCSV('spottyfire-export.csv'); }
+    });
+
+    items.push({
+      icon: '\u2913', label: 'Export marked data',
+      disabled: !mm.hasMarking(),
+      action: function () { ds.downloadCSV('spottyfire-marked.csv', { markedOnly: true }); }
+    });
+
+    return items;
+  }
+
+  return {
+    show: show,
+    hide: hide,
+    isVisible: isVisible,
+    buildChartItems: buildChartItems,
+  };
+})();
 // ─── ChartWrapper ───────────────────────────────────────────
 var ChartWrapper = (function () {
 
@@ -2658,19 +2968,19 @@ var ChartWrapper = (function () {
     s.textContent =
       '.sl-axis-select{font-size:11px;background:var(--sl-panel-bg);border:1px solid var(--sl-panel-border);border-radius:6px;color:var(--sl-text-secondary);padding:3px 6px;cursor:pointer;font-family:var(--sl-font);transition:border-color var(--sl-transition) ease;outline:none;}' +
       '.sl-axis-select:hover,.sl-axis-select:focus{border-color:var(--sl-accent);color:var(--sl-text-primary);}' +
-      '.sl-chart-layout{display:flex;flex:1;min-height:0;}' +
+      '.sl-chart-layout{display:flex;flex:1;min-height:0;min-width:0;overflow:hidden;}' +
       '.sl-y-axis-bar{display:flex;align-items:center;justify-content:center;padding:4px;min-width:0;flex-shrink:0;}' +
       '.sl-y-axis-bar select,.sl-y-axis-bar input{writing-mode:vertical-lr;text-orientation:mixed;transform:rotate(180deg);max-height:100%;padding:6px 3px;}' +
       '.sl-chart-column{display:flex;flex-direction:column;flex:1;min-width:0;min-height:0;}' +
       '.sl-x-axis-bar{display:flex;align-items:center;justify-content:center;padding:4px 8px;gap:4px;border-top:1px solid var(--sl-panel-border);}' +
       '.sl-x-axis-bar .sl-axis-label{font-size:10px;color:var(--sl-text-muted);text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;}' +
       // Properties sidebar
-      '.sl-color-sidebar{display:flex;flex-direction:column;border-left:1px solid var(--sl-panel-border);overflow:hidden;transition:width var(--sl-transition) ease,min-width var(--sl-transition) ease,max-width var(--sl-transition) ease;width:140px;min-width:140px;max-width:140px;flex-shrink:0;}' +
+      '.sl-color-sidebar{display:flex;flex-direction:column;border-left:1px solid var(--sl-panel-border);overflow:hidden;transition:width var(--sl-transition) ease,min-width var(--sl-transition) ease,max-width var(--sl-transition) ease;width:140px;min-width:140px;max-width:140px;flex-shrink:0;height:100%;}' +
       '.sl-color-sidebar.sl-collapsed{width:28px !important;min-width:28px !important;max-width:28px !important;}' +
       '.sl-color-sidebar-toggle{background:none;border:none;border-bottom:1px solid var(--sl-panel-border);color:var(--sl-text-muted);cursor:pointer;padding:6px 4px;font-size:11px;font-family:var(--sl-font);text-align:center;white-space:nowrap;transition:color var(--sl-transition) ease;}' +
       '.sl-color-sidebar-toggle:hover{color:var(--sl-text-primary);}' +
       '.sl-collapsed .sl-color-sidebar-toggle{writing-mode:vertical-lr;transform:rotate(180deg);padding:8px 6px;border-bottom:none;flex:0 0 auto;}' +
-      '.sl-color-sidebar-body{flex:1;overflow-y:auto;padding:6px;}' +
+      '.sl-color-sidebar-body{flex:1;overflow-y:auto;padding:6px;min-height:0;max-height:calc(100% - 32px);}' +
       '.sl-collapsed .sl-color-sidebar-body{display:none;}' +
       '.sl-color-item{display:flex;align-items:center;gap:6px;padding:3px 4px;cursor:pointer;border-radius:4px;font-size:11px;color:var(--sl-text-secondary);transition:background var(--sl-transition) ease;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}' +
       '.sl-color-item:hover{background:rgba(128,128,128,0.1);color:var(--sl-text-primary);}' +
@@ -2738,7 +3048,10 @@ var ChartWrapper = (function () {
       if (!currentCol) return;
       var values = ds.getColumnValues(currentCol);
       var palette = ThemeManager.getTheme().palette;
-      values.forEach(function (v, i) {
+      var maxVisible = 10;
+      var showValues = values.slice(0, maxVisible);
+
+      showValues.forEach(function (v, i) {
         var item = document.createElement('div');
         item.className = 'sl-color-item';
 
@@ -2763,6 +3076,14 @@ var ChartWrapper = (function () {
 
         legendDiv.appendChild(item);
       });
+
+      // Show remaining count
+      if (values.length > maxVisible) {
+        var more = document.createElement('div');
+        more.style.cssText = 'font-size:10px;color:var(--sl-text-muted);padding:4px;';
+        more.textContent = '+ ' + (values.length - maxVisible) + ' more values';
+        legendDiv.appendChild(more);
+      }
     }
 
     _renderLegend();
@@ -2924,12 +3245,32 @@ var ChartWrapper = (function () {
     var fsBtn = document.createElement('button');
     fsBtn.textContent = '\u26F6';
     fsBtn.title = 'Fullscreen';
+    var _preFsHeight = null;
     fsBtn.addEventListener('click', function () {
       var isFs = panel.classList.toggle('sl-fullscreen');
       fsBtn.textContent = isFs ? '\u2716' : '\u26F6';
       fsBtn.title = isFs ? 'Exit fullscreen' : 'Fullscreen';
       document.body.style.overflow = isFs ? 'hidden' : '';
-      setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 100);
+      if (isFs) {
+        _preFsHeight = panel.style.height || '';
+      } else {
+        // Clear all inline sizing so CSS takes over
+        panel.style.height = _preFsHeight || '';
+        panel.style.width = '';
+        panel.style.position = '';
+        panel.style.top = '';
+        panel.style.left = '';
+        panel.style.right = '';
+        panel.style.bottom = '';
+        panel.style.zIndex = '';
+      }
+      setTimeout(function () {
+        var plotDiv = panel.querySelector('.sl-panel-body');
+        if (plotDiv && plotDiv.data) {
+          Plotly.Plots.resize(plotDiv);
+        }
+        window.dispatchEvent(new Event('resize'));
+      }, 200);
     });
     actions.appendChild(fsBtn);
 
@@ -3099,6 +3440,37 @@ var ChartWrapper = (function () {
       body.className = 'sl-panel-body';
       panel.appendChild(body);
     }
+
+    // Drag-to-resize handle (bottom edge)
+    var resizeHandle = document.createElement('div');
+    resizeHandle.className = 'sl-resize-handle';
+    var _dragging = false;
+    var _startY = 0;
+    var _startH = 0;
+    resizeHandle.addEventListener('mousedown', function (e) {
+      e.preventDefault();
+      _dragging = true;
+      _startY = e.clientY;
+      _startH = panel.offsetHeight;
+      document.addEventListener('mousemove', _onDrag);
+      document.addEventListener('mouseup', _onDragEnd);
+    });
+    function _onDrag(e) {
+      if (!_dragging) return;
+      var newH = Math.max(150, _startH + (e.clientY - _startY));
+      panel.style.height = newH + 'px';
+    }
+    function _onDragEnd() {
+      _dragging = false;
+      document.removeEventListener('mousemove', _onDrag);
+      document.removeEventListener('mouseup', _onDragEnd);
+      // Resize Plotly to fit new height
+      var pd = panel.querySelector('.sl-panel-body');
+      if (pd && pd.data) {
+        setTimeout(function () { Plotly.Plots.resize(pd); }, 50);
+      }
+    }
+    panel.appendChild(resizeHandle);
 
     container.innerHTML = '';
     container.appendChild(panel);
@@ -3447,6 +3819,276 @@ class FilterPanel {
     // no-op — removed filter-changed listener
   }
 }
+// ─── MenuBar ────────────────────────────────────────────────
+class MenuBar {
+  constructor(selector, dataStore, config) {
+    this._ds = dataStore;
+    this._config = config || {};
+    this._container = typeof selector === 'string' ? document.querySelector(selector) : selector;
+    if (!this._container) throw new Error('MenuBar: container not found');
+    this.render();
+  }
+
+  render() {
+    var ds = this._ds;
+    var cfg = this._config;
+    var container = this._container;
+    container.innerHTML = '';
+
+    var bar = document.createElement('div');
+    bar.className = 'sl-menubar';
+
+    // ── Left: Menu items ──
+    var menus = document.createElement('div');
+    menus.className = 'sl-menubar-menus';
+
+    // FILE menu
+    var fileItems = [
+      { label: 'Upload CSV...', icon: '\uD83D\uDCC1', action: function () { _triggerCSVUpload(ds); } },
+      { label: 'Upload JSON...', icon: '\uD83D\uDCC4', action: function () { _triggerJSONUpload(ds); } },
+      '---',
+      { label: 'Export All as CSV', icon: '\u2913', action: function () { ds.downloadCSV('spottyfire-export.csv'); } },
+      { label: 'Export Marked as CSV', icon: '\u2913', action: function () { ds.downloadCSV('spottyfire-marked.csv', { markedOnly: true }); },
+        disabled: function () { return !ds._markingManager.hasMarking(); } },
+    ];
+    menus.appendChild(_buildMenu('File', fileItems));
+
+    // EDIT menu
+    var editItems = [
+      { label: 'Undo', icon: '\u21A9', shortcut: 'Ctrl+Z', action: function () { UndoManager.undo(); },
+        disabled: function () { return !UndoManager.canUndo(); } },
+      { label: 'Redo', icon: '\u21AA', shortcut: 'Ctrl+Y', action: function () { UndoManager.redo(); },
+        disabled: function () { return !UndoManager.canRedo(); } },
+      '---',
+      { label: 'Clear Selection', icon: '\u2715', shortcut: 'Esc', action: function () { ds._markingManager.clearMarking(); },
+        disabled: function () { return !ds._markingManager.hasMarking(); } },
+      { label: 'Clear All Filters', icon: '\u2205', action: function () { ds.clearAllFilters(); },
+        disabled: function () { return Object.keys(ds.getActiveFilters()).length === 0; } },
+    ];
+    menus.appendChild(_buildMenu('Edit', editItems));
+
+    // VIEW menu
+    var viewItems = [];
+
+    // Panel toggles
+    viewItems.push({
+      label: 'Columns Panel', icon: '\uD83D\uDCCB',
+      action: function () {
+        var fn = window.toggleAppSidebar || window.toggleLeft;
+        if (fn) fn('left');
+      }
+    });
+    viewItems.push({
+      label: 'Filters Panel', icon: '\uD83D\uDD0D',
+      action: function () {
+        var fn = window.toggleAppSidebar || window.toggleRight;
+        if (fn) fn('right');
+      }
+    });
+
+    viewItems.push('---');
+
+    // Themes
+    var themeNames = cfg.themes || ThemeManager.getThemeNames();
+    themeNames.forEach(function (t) {
+      viewItems.push({
+        label: t.charAt(0).toUpperCase() + t.slice(1),
+        icon: ThemeManager.getTheme().name === t ? '\u2713' : ' ',
+        action: function () { ThemeManager.setTheme(t); _self.render(); },
+      });
+    });
+    menus.appendChild(_buildMenu('View', viewItems));
+
+    bar.appendChild(menus);
+
+    // ── Right: Quick action buttons ──
+    var actions = document.createElement('div');
+    actions.className = 'sl-menubar-actions';
+
+    // Undo button
+    var undoBtn = document.createElement('button');
+    undoBtn.className = 'sl-menubar-btn';
+    undoBtn.innerHTML = '\u21A9';
+    undoBtn.title = 'Undo (Ctrl+Z)';
+    undoBtn.disabled = !UndoManager.canUndo();
+    undoBtn.addEventListener('click', function () { UndoManager.undo(); });
+    actions.appendChild(undoBtn);
+
+    // Redo button
+    var redoBtn = document.createElement('button');
+    redoBtn.className = 'sl-menubar-btn';
+    redoBtn.innerHTML = '\u21AA';
+    redoBtn.title = 'Redo (Ctrl+Y)';
+    redoBtn.disabled = !UndoManager.canRedo();
+    redoBtn.addEventListener('click', function () { UndoManager.redo(); });
+    actions.appendChild(redoBtn);
+
+    // Separator
+    var sep = document.createElement('div');
+    sep.className = 'sl-menubar-sep';
+    actions.appendChild(sep);
+
+    // Clear selection
+    var clearBtn = document.createElement('button');
+    clearBtn.className = 'sl-menubar-btn';
+    clearBtn.innerHTML = '\u2715';
+    clearBtn.title = 'Clear selection (Esc)';
+    clearBtn.addEventListener('click', function () { ds._markingManager.clearMarking(); });
+    actions.appendChild(clearBtn);
+
+    // Row count indicator
+    var info = document.createElement('span');
+    info.className = 'sl-menubar-info';
+    info.textContent = ds.getRowCount() + ' rows';
+    actions.appendChild(info);
+
+    bar.appendChild(actions);
+    container.appendChild(bar);
+
+    // Update button states on undo/marking changes
+    var _self = this;
+    UndoManager.on('changed', function () {
+      undoBtn.disabled = !UndoManager.canUndo();
+      redoBtn.disabled = !UndoManager.canRedo();
+    });
+    ds._markingManager.on('marking-changed', function (e) {
+      var count = e.markedIndices.size;
+      info.textContent = count > 0 ? count + ' / ' + ds.getRowCount() + ' selected' : ds.getRowCount() + ' rows';
+    });
+    ds.on('filter-changed', function () {
+      var filtered = ds.getFilteredRowCount();
+      var total = ds.getRowCount();
+      var marked = ds._markingManager.hasMarking() ? ds._markingManager.getMarkedIndices().size : 0;
+      if (marked > 0) {
+        info.textContent = marked + ' / ' + filtered + ' selected (' + total + ' total)';
+      } else if (filtered < total) {
+        info.textContent = filtered + ' / ' + total + ' rows (filtered)';
+      } else {
+        info.textContent = total + ' rows';
+      }
+    });
+  }
+
+  destroy() {}
+}
+
+// ── Menu bar helpers ──
+function _buildMenu(label, items) {
+  var wrap = document.createElement('div');
+  wrap.className = 'sl-menu-wrap';
+
+  var btn = document.createElement('button');
+  btn.className = 'sl-menu-trigger';
+  btn.textContent = label;
+  wrap.appendChild(btn);
+
+  var dropdown = document.createElement('div');
+  dropdown.className = 'sl-menu-dropdown';
+  dropdown.style.display = 'none';
+
+  items.forEach(function (item) {
+    if (item === '---') {
+      var sep = document.createElement('div');
+      sep.className = 'sl-ctx-separator';
+      dropdown.appendChild(sep);
+      return;
+    }
+
+    var row = document.createElement('div');
+    row.className = 'sl-ctx-item';
+    var isDisabled = typeof item.disabled === 'function' ? item.disabled() : !!item.disabled;
+    if (isDisabled) row.classList.add('sl-ctx-disabled');
+
+    if (item.icon) {
+      var icon = document.createElement('span');
+      icon.className = 'sl-ctx-icon';
+      icon.textContent = item.icon;
+      row.appendChild(icon);
+    }
+
+    var text = document.createElement('span');
+    text.textContent = item.label;
+    row.appendChild(text);
+
+    if (item.shortcut) {
+      var sc = document.createElement('span');
+      sc.className = 'sl-ctx-shortcut';
+      sc.textContent = item.shortcut;
+      row.appendChild(sc);
+    }
+
+    if (!isDisabled && item.action) {
+      row.addEventListener('click', function (e) {
+        e.stopPropagation();
+        dropdown.style.display = 'none';
+        item.action();
+      });
+    }
+
+    dropdown.appendChild(row);
+  });
+
+  btn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    // Close any other open menus
+    document.querySelectorAll('.sl-menu-dropdown').forEach(function (d) {
+      if (d !== dropdown) d.style.display = 'none';
+    });
+    // Re-evaluate disabled states
+    var rows = dropdown.querySelectorAll('.sl-ctx-item');
+    var idx = 0;
+    items.forEach(function (item) {
+      if (item === '---') return;
+      var row = rows[idx++];
+      if (!row) return;
+      var isDisabled = typeof item.disabled === 'function' ? item.disabled() : false;
+      row.classList.toggle('sl-ctx-disabled', isDisabled);
+    });
+    var open = dropdown.style.display === 'block';
+    dropdown.style.display = open ? 'none' : 'block';
+  });
+
+  // Close on outside click
+  document.addEventListener('click', function () { dropdown.style.display = 'none'; });
+
+  wrap.appendChild(dropdown);
+  return wrap;
+}
+
+function _triggerCSVUpload(ds) {
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.csv';
+  input.addEventListener('change', function () {
+    var file = input.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      ds.loadCSV(e.target.result);
+    };
+    reader.readAsText(file);
+  });
+  input.click();
+}
+
+function _triggerJSONUpload(ds) {
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.addEventListener('change', function () {
+    var file = input.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      try {
+        var arr = JSON.parse(e.target.result);
+        if (Array.isArray(arr)) ds.loadJSON(arr);
+      } catch (err) { console.error('Invalid JSON:', err); }
+    };
+    reader.readAsText(file);
+  });
+  input.click();
+}
 // ─── ColumnPanel ────────────────────────────────────────────
 class ColumnPanel {
   constructor(selector, dataStore, config) {
@@ -3772,6 +4414,7 @@ var SpottyFire = {
   FilterPanel: function (sel, ds, cfg) { return new FilterPanel(sel, ds, cfg); },
   FormulaBar: function (sel, ds, cfg) { return new FormulaBar(sel, ds, cfg); },
   Toolbar: function (sel, ds, cfg) { return new Toolbar(sel, ds, cfg); },
+  MenuBar: function (sel, ds, cfg) { return new MenuBar(sel, ds, cfg); },
   ColumnPanel: function (sel, ds, cfg) { return new ColumnPanel(sel, ds, cfg); },
 
   // Theme API
@@ -3805,6 +4448,9 @@ var SpottyFire = {
       var cols = ds.getColumns().filter(function (c) { return c.name !== '__rowIndex'; });
       var numCols = cols.filter(function (c) { return c.type === 'number'; });
       var strCols = cols.filter(function (c) { return c.type === 'string'; });
+      // Pick categorical columns with < 20 unique values (skip IDs, names)
+      var catCols = strCols.filter(function (c) { return ds.getColumnValues(c.name).length <= 20; });
+      if (catCols.length === 0) catCols = strCols;
       var allNames = cols.map(function (c) { return c.name; });
 
       // Apply user-specified formats
@@ -3852,16 +4498,16 @@ var SpottyFire = {
       var chartCount = 0;
 
       // 1. Bar chart: first string col as category, first numeric as value
-      if (strCols.length > 0 && numCols.length > 0) {
+      if (catCols.length > 0 && numCols.length > 0) {
         var barDiv = document.createElement('div');
         barDiv.style.minHeight = '360px';
         grid.appendChild(barDiv);
         SpottyFire.BarChart(barDiv, ds, {
-          category: strCols[0].name,
+          category: catCols[0].name,
           value: numCols[0].name,
           aggregation: 'avg',
           showValues: true,
-          title: 'Avg ' + numCols[0].name + ' by ' + strCols[0].name,
+          title: 'Avg ' + numCols[0].name + ' by ' + catCols[0].name,
         });
         chartCount++;
       }
@@ -3874,7 +4520,7 @@ var SpottyFire = {
         SpottyFire.ScatterPlot(scatterDiv, ds, {
           x: numCols[1].name,
           y: numCols[0].name,
-          colorBy: strCols.length > 0 ? strCols[0].name : null,
+          colorBy: catCols.length > 0 ? catCols[0].name : null,
           pointSize: 7,
           title: numCols[1].name + ' vs ' + numCols[0].name,
         });
@@ -3882,11 +4528,11 @@ var SpottyFire = {
       }
 
       // 3. Pie chart: second string col (or first if only one), first numeric
-      if (strCols.length > 0 && numCols.length > 0) {
+      if (catCols.length > 0 && numCols.length > 0) {
         var pieDiv = document.createElement('div');
         pieDiv.style.minHeight = '360px';
         grid.appendChild(pieDiv);
-        var pieCat = strCols.length > 1 ? strCols[1].name : strCols[0].name;
+        var pieCat = catCols.length > 1 ? catCols[1].name : catCols[0].name;
         SpottyFire.PieChart(pieDiv, ds, {
           category: pieCat,
           value: numCols[0].name,
@@ -3899,16 +4545,16 @@ var SpottyFire = {
       }
 
       // 4. Stacked bar: if 2+ string cols, stack second on first
-      if (strCols.length >= 2 && numCols.length > 0) {
+      if (catCols.length >= 2 && numCols.length > 0) {
         var stackDiv = document.createElement('div');
         stackDiv.style.minHeight = '360px';
         grid.appendChild(stackDiv);
         SpottyFire.BarChart(stackDiv, ds, {
-          category: strCols[0].name,
+          category: catCols[0].name,
           value: numCols[0].name,
           aggregation: 'sum',
-          colorBy: strCols[1].name,
-          title: numCols[0].name + ' by ' + strCols[0].name + ' & ' + strCols[1].name,
+          colorBy: catCols[1].name,
+          title: numCols[0].name + ' by ' + catCols[0].name + ' & ' + catCols[1].name,
         });
         chartCount++;
       }

@@ -42,6 +42,30 @@ class BaseChart {
 
     this._ds.on('format-changed', this._onFormat);
     ThemeManager.on(this._onTheme);
+
+    // Right-click context menu
+    var plotDiv = this._getPlotDiv();
+    if (plotDiv) {
+      plotDiv.addEventListener('contextmenu', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        // Try to extract point data from Plotly's hover info
+        var pointData = null;
+        var hoverLayer = plotDiv.querySelector('.hoverlayer');
+        // Use Plotly's internal hover data if available
+        if (plotDiv._fullLayout && plotDiv._hoverdata && plotDiv._hoverdata.length > 0) {
+          var hd = plotDiv._hoverdata[0];
+          if (hd.x != null || hd.y != null) {
+            var cfg = self._config;
+            var catCol = cfg.category || cfg.x;
+            var valCol = cfg.value || cfg.y;
+            pointData = { column: catCol, value: hd.x };
+          }
+        }
+        var items = ContextMenu.buildChartItems(self, pointData);
+        ContextMenu.show(e.clientX, e.clientY, items);
+      });
+    }
   }
 
   getConfig() { return Object.assign({}, this._config); }
@@ -256,7 +280,7 @@ class BaseChart {
     return {
       displaylogo: false,
       responsive: true,
-      modeBarButtonsToRemove: ['toImage', 'sendDataToCloud'],
+      modeBarButtonsToRemove: ['toImage', 'sendDataToCloud', 'autoScale2d'],
     };
   }
 

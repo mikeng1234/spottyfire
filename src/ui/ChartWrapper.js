@@ -50,19 +50,19 @@ var ChartWrapper = (function () {
     s.textContent =
       '.sl-axis-select{font-size:11px;background:var(--sl-panel-bg);border:1px solid var(--sl-panel-border);border-radius:6px;color:var(--sl-text-secondary);padding:3px 6px;cursor:pointer;font-family:var(--sl-font);transition:border-color var(--sl-transition) ease;outline:none;}' +
       '.sl-axis-select:hover,.sl-axis-select:focus{border-color:var(--sl-accent);color:var(--sl-text-primary);}' +
-      '.sl-chart-layout{display:flex;flex:1;min-height:0;}' +
+      '.sl-chart-layout{display:flex;flex:1;min-height:0;min-width:0;overflow:hidden;}' +
       '.sl-y-axis-bar{display:flex;align-items:center;justify-content:center;padding:4px;min-width:0;flex-shrink:0;}' +
       '.sl-y-axis-bar select,.sl-y-axis-bar input{writing-mode:vertical-lr;text-orientation:mixed;transform:rotate(180deg);max-height:100%;padding:6px 3px;}' +
       '.sl-chart-column{display:flex;flex-direction:column;flex:1;min-width:0;min-height:0;}' +
       '.sl-x-axis-bar{display:flex;align-items:center;justify-content:center;padding:4px 8px;gap:4px;border-top:1px solid var(--sl-panel-border);}' +
       '.sl-x-axis-bar .sl-axis-label{font-size:10px;color:var(--sl-text-muted);text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;}' +
       // Properties sidebar
-      '.sl-color-sidebar{display:flex;flex-direction:column;border-left:1px solid var(--sl-panel-border);overflow:hidden;transition:width var(--sl-transition) ease,min-width var(--sl-transition) ease,max-width var(--sl-transition) ease;width:140px;min-width:140px;max-width:140px;flex-shrink:0;}' +
+      '.sl-color-sidebar{display:flex;flex-direction:column;border-left:1px solid var(--sl-panel-border);overflow:hidden;transition:width var(--sl-transition) ease,min-width var(--sl-transition) ease,max-width var(--sl-transition) ease;width:140px;min-width:140px;max-width:140px;flex-shrink:0;height:100%;}' +
       '.sl-color-sidebar.sl-collapsed{width:28px !important;min-width:28px !important;max-width:28px !important;}' +
       '.sl-color-sidebar-toggle{background:none;border:none;border-bottom:1px solid var(--sl-panel-border);color:var(--sl-text-muted);cursor:pointer;padding:6px 4px;font-size:11px;font-family:var(--sl-font);text-align:center;white-space:nowrap;transition:color var(--sl-transition) ease;}' +
       '.sl-color-sidebar-toggle:hover{color:var(--sl-text-primary);}' +
       '.sl-collapsed .sl-color-sidebar-toggle{writing-mode:vertical-lr;transform:rotate(180deg);padding:8px 6px;border-bottom:none;flex:0 0 auto;}' +
-      '.sl-color-sidebar-body{flex:1;overflow-y:auto;padding:6px;}' +
+      '.sl-color-sidebar-body{flex:1;overflow-y:auto;padding:6px;min-height:0;max-height:calc(100% - 32px);}' +
       '.sl-collapsed .sl-color-sidebar-body{display:none;}' +
       '.sl-color-item{display:flex;align-items:center;gap:6px;padding:3px 4px;cursor:pointer;border-radius:4px;font-size:11px;color:var(--sl-text-secondary);transition:background var(--sl-transition) ease;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}' +
       '.sl-color-item:hover{background:rgba(128,128,128,0.1);color:var(--sl-text-primary);}' +
@@ -130,7 +130,10 @@ var ChartWrapper = (function () {
       if (!currentCol) return;
       var values = ds.getColumnValues(currentCol);
       var palette = ThemeManager.getTheme().palette;
-      values.forEach(function (v, i) {
+      var maxVisible = 10;
+      var showValues = values.slice(0, maxVisible);
+
+      showValues.forEach(function (v, i) {
         var item = document.createElement('div');
         item.className = 'sl-color-item';
 
@@ -155,6 +158,14 @@ var ChartWrapper = (function () {
 
         legendDiv.appendChild(item);
       });
+
+      // Show remaining count
+      if (values.length > maxVisible) {
+        var more = document.createElement('div');
+        more.style.cssText = 'font-size:10px;color:var(--sl-text-muted);padding:4px;';
+        more.textContent = '+ ' + (values.length - maxVisible) + ' more values';
+        legendDiv.appendChild(more);
+      }
     }
 
     _renderLegend();
@@ -316,12 +327,32 @@ var ChartWrapper = (function () {
     var fsBtn = document.createElement('button');
     fsBtn.textContent = '\u26F6';
     fsBtn.title = 'Fullscreen';
+    var _preFsHeight = null;
     fsBtn.addEventListener('click', function () {
       var isFs = panel.classList.toggle('sl-fullscreen');
       fsBtn.textContent = isFs ? '\u2716' : '\u26F6';
       fsBtn.title = isFs ? 'Exit fullscreen' : 'Fullscreen';
       document.body.style.overflow = isFs ? 'hidden' : '';
-      setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 100);
+      if (isFs) {
+        _preFsHeight = panel.style.height || '';
+      } else {
+        // Clear all inline sizing so CSS takes over
+        panel.style.height = _preFsHeight || '';
+        panel.style.width = '';
+        panel.style.position = '';
+        panel.style.top = '';
+        panel.style.left = '';
+        panel.style.right = '';
+        panel.style.bottom = '';
+        panel.style.zIndex = '';
+      }
+      setTimeout(function () {
+        var plotDiv = panel.querySelector('.sl-panel-body');
+        if (plotDiv && plotDiv.data) {
+          Plotly.Plots.resize(plotDiv);
+        }
+        window.dispatchEvent(new Event('resize'));
+      }, 200);
     });
     actions.appendChild(fsBtn);
 
@@ -491,6 +522,37 @@ var ChartWrapper = (function () {
       body.className = 'sl-panel-body';
       panel.appendChild(body);
     }
+
+    // Drag-to-resize handle (bottom edge)
+    var resizeHandle = document.createElement('div');
+    resizeHandle.className = 'sl-resize-handle';
+    var _dragging = false;
+    var _startY = 0;
+    var _startH = 0;
+    resizeHandle.addEventListener('mousedown', function (e) {
+      e.preventDefault();
+      _dragging = true;
+      _startY = e.clientY;
+      _startH = panel.offsetHeight;
+      document.addEventListener('mousemove', _onDrag);
+      document.addEventListener('mouseup', _onDragEnd);
+    });
+    function _onDrag(e) {
+      if (!_dragging) return;
+      var newH = Math.max(150, _startH + (e.clientY - _startY));
+      panel.style.height = newH + 'px';
+    }
+    function _onDragEnd() {
+      _dragging = false;
+      document.removeEventListener('mousemove', _onDrag);
+      document.removeEventListener('mouseup', _onDragEnd);
+      // Resize Plotly to fit new height
+      var pd = panel.querySelector('.sl-panel-body');
+      if (pd && pd.data) {
+        setTimeout(function () { Plotly.Plots.resize(pd); }, 50);
+      }
+    }
+    panel.appendChild(resizeHandle);
 
     container.innerHTML = '';
     container.appendChild(panel);

@@ -82,14 +82,14 @@
       <div id="columns"></div>
     </aside>
 
-    <!-- Center: Charts -->
-    <div class="main">
-      <div class="grid">
+    <!-- Center: Menu bar + Charts -->
+    <div class="main" style="padding:0;">
+      <div id="menubar"></div>
+      <div class="grid" style="padding:20px;">
         <div class="full">
           <h1>Sales Correlation Analysis</h1>
-          <p class="sub">Explore relationships between ad spend, units sold, revenue, ratings, and return rates. Set column formats on the left.</p>
+          <p class="sub">Explore relationships between ad spend, units sold, revenue, ratings, and return rates.</p>
         </div>
-        <div id="toolbar" class="full"></div>
         <div class="insight-box full">
           <strong>Correlations:</strong>
           Ad Spend vs Units Sold (strong +) &bull;
@@ -157,9 +157,9 @@
         columns: ['Category', 'Region', 'Channel', 'SalesRep', 'AdSpend', 'Price', 'CustomerRating']
       });
 
-      SpottyFire.Toolbar('#toolbar', ds, {
-        showExport: true, showThemeToggle: true,
-        themes: ['obsidian', 'porcelain', 'midnight', 'arctic']
+      // Menu bar (top)
+      SpottyFire.MenuBar('#menubar', ds, {
+        themes: ['obsidian', 'porcelain', 'midnight', 'arctic', 'neon', 'corporate']
       });
 
       SpottyFire.ScatterPlot('#spend-vs-units', ds, {
