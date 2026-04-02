@@ -100,6 +100,7 @@ class FilterPanel {
 
         var track = document.createElement('div');
         track.className = 'sl-dualrange';
+        track.setAttribute('aria-hidden', 'true');
 
         var fill = document.createElement('div');
         fill.className = 'sl-dualrange-fill';
@@ -264,8 +265,8 @@ class FilterPanel {
         var selected = active ? active.selected.slice() : values.slice();
 
         // Select all / none
-        var allBtn = document.createElement('div');
-        allBtn.style.cssText = 'font-size:11px;color:var(--sl-accent);cursor:pointer;margin-bottom:4px;';
+        var allBtn = document.createElement('button');
+        allBtn.style.cssText = 'font-size:11px;color:var(--sl-accent);cursor:pointer;margin-bottom:4px;background:none;border:none;padding:0;font-family:inherit;';
         allBtn.textContent = selected.length === values.length ? 'Select None' : 'Select All';
 
         // Build checkboxes first so allBtn can reference them

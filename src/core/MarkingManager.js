@@ -88,7 +88,7 @@ class MarkingManager {
       },
       redo: function () {
         self._marked = new Set();
-        self._emit({ markedIndices: self._marked, source: 'undo', action: 'clear' });
+        self._emit({ markedIndices: self._marked, source: 'redo', action: 'clear' });
       },
     });
   }

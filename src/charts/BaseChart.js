@@ -271,20 +271,15 @@ class BaseChart {
     if (cols.length === 0) return;
     var cfg = this._config;
 
-    // Find first numeric and first categorical (< 20 unique) columns
-    var rows = this._ds._rows;
+    // Find first numeric and first categorical columns using DataStore metadata
     var numCols = [];
     var catCols = [];
-    cols.forEach(function (c) {
-      if (c === '__rowIndex') return;
-      if (rows.length > 0 && typeof rows[0][c] === 'number') {
-        numCols.push(c);
+    this._ds.getColumns().forEach(function (col) {
+      if (col.name === '__rowIndex') return;
+      if (col.type === 'number') {
+        numCols.push(col.name);
       } else {
-        var unique = {};
-        for (var i = 0; i < Math.min(rows.length, 200); i++) {
-          if (rows[i][c] != null) unique[rows[i][c]] = true;
-        }
-        if (Object.keys(unique).length <= 20) catCols.push(c);
+        catCols.push(col.name);
       }
     });
 
@@ -404,13 +399,14 @@ class BaseChart {
   }
 
   static resizeAll() {
-    // Trigger window resize event — Plotly's responsive:true hooks into this
-    // Multiple delays to ensure DOM has settled
-    [50, 200, 500].forEach(function (delay) {
-      setTimeout(function () {
-        window.dispatchEvent(new Event('resize'));
-      }, delay);
-    });
+    // Resize only registered Plotly chart divs — avoids triggering unrelated resize handlers
+    setTimeout(function () {
+      document.querySelectorAll('.sl-panel-body').forEach(function (div) {
+        if (typeof Plotly !== 'undefined' && div._fullLayout) {
+          try { Plotly.Plots.resize(div); } catch (e) {}
+        }
+      });
+    }, 50);
   }
 
 }

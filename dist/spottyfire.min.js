@@ -384,6 +384,7 @@ const ThemeManager = (function () {
         '.sl-viz-icon{font-size:20px;margin-bottom:4px;opacity:0.7;}' +
         '.sl-viz-tile:hover .sl-viz-icon{opacity:1;}' +
         '.sl-viz-label{font-size:10px;font-weight:600;color:var(--sl-text-secondary);text-transform:uppercase;letter-spacing:0.5px;}' +
+        '.sl-viz-desc{font-size:9px;color:var(--sl-text-muted);margin-top:2px;text-align:center;line-height:1.3;}' +
         '.sl-dataset-panel{padding:4px 0;}' +
         '.sl-dataset-title{font-size:14px;font-weight:700;padding:8px 12px;color:var(--sl-text-primary);}' +
         '.sl-dataset-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;cursor:pointer;border-left:3px solid transparent;transition:all var(--sl-transition) ease;}' +
@@ -616,7 +617,7 @@ class MarkingManager {
       },
       redo: function () {
         self._marked = new Set();
-        self._emit({ markedIndices: self._marked, source: 'undo', action: 'clear' });
+        self._emit({ markedIndices: self._marked, source: 'redo', action: 'clear' });
       },
     });
   }
@@ -989,8 +990,8 @@ var FormulaEngine = (function () {
           case '<': return (+l) < (+r);
           case '>=': return (+l) >= (+r);
           case '<=': return (+l) <= (+r);
-          case '==': return l == r;
-          case '!=': return l != r;
+          case '==': return l === r;
+          case '!=': return l !== r;
         }
         break;
       }
@@ -1152,6 +1153,10 @@ class DataStore {
   async loadCSV(urlOrString) {
     var self = this;
     return new Promise(function (resolve, reject) {
+      if (!urlOrString || typeof urlOrString !== 'string') {
+        reject(new Error('loadCSV: argument must be a non-empty string'));
+        return;
+      }
       var config = {
         header: true,
         dynamicTyping: true,
@@ -1299,9 +1304,17 @@ class DataStore {
   }
 
   _applyCalculatedColumns() {
-    var calc = this._calculatedCols;
-    var names = Object.keys(calc);
+    var names = Object.keys(this._calculatedFormulas);
     if (names.length === 0) return;
+    var self = this;
+    // Recompile window functions against current rows — baked-in snapshots go stale after reload
+    names.forEach(function (n) {
+      var formula = self._calculatedFormulas[n];
+      if (formula.toUpperCase().indexOf('OVER') >= 0) {
+        self._calculatedCols[n] = FormulaEngine.compileWindow(formula, self._rows);
+      }
+    });
+    var calc = this._calculatedCols;
     this._rows.forEach(function (r) {
       names.forEach(function (n) { r[n] = calc[n](r); });
     });
@@ -1635,20 +1648,15 @@ class BaseChart {
     if (cols.length === 0) return;
     var cfg = this._config;
 
-    // Find first numeric and first categorical (< 20 unique) columns
-    var rows = this._ds._rows;
+    // Find first numeric and first categorical columns using DataStore metadata
     var numCols = [];
     var catCols = [];
-    cols.forEach(function (c) {
-      if (c === '__rowIndex') return;
-      if (rows.length > 0 && typeof rows[0][c] === 'number') {
-        numCols.push(c);
+    this._ds.getColumns().forEach(function (col) {
+      if (col.name === '__rowIndex') return;
+      if (col.type === 'number') {
+        numCols.push(col.name);
       } else {
-        var unique = {};
-        for (var i = 0; i < Math.min(rows.length, 200); i++) {
-          if (rows[i][c] != null) unique[rows[i][c]] = true;
-        }
-        if (Object.keys(unique).length <= 20) catCols.push(c);
+        catCols.push(col.name);
       }
     });
 
@@ -1768,13 +1776,14 @@ class BaseChart {
   }
 
   static resizeAll() {
-    // Trigger window resize event — Plotly's responsive:true hooks into this
-    // Multiple delays to ensure DOM has settled
-    [50, 200, 500].forEach(function (delay) {
-      setTimeout(function () {
-        window.dispatchEvent(new Event('resize'));
-      }, delay);
-    });
+    // Resize only registered Plotly chart divs — avoids triggering unrelated resize handlers
+    setTimeout(function () {
+      document.querySelectorAll('.sl-panel-body').forEach(function (div) {
+        if (typeof Plotly !== 'undefined' && div._fullLayout) {
+          try { Plotly.Plots.resize(div); } catch (e) {}
+        }
+      });
+    }, 50);
   }
 
 }
@@ -3055,15 +3064,16 @@ var TileEngine = (function () {
   Engine.prototype.layout = function () {
     if (!this._root) return;
     var rect = this._container.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      // Container not yet painted — defer until next frame
+      var self = this;
+      requestAnimationFrame(function () { self.layout(); });
+      return;
+    }
     this._layoutNode(this._root, 0, 0, rect.width, rect.height);
 
-    // Trigger Plotly resize on all charts
-    setTimeout(function () {
-      window.dispatchEvent(new Event('resize'));
-    }, 50);
-    setTimeout(function () {
-      window.dispatchEvent(new Event('resize'));
-    }, 200);
+    // Resize only registered Plotly chart divs — avoids cascading global resize
+    BaseChart.resizeAll();
   };
 
   Engine.prototype._layoutNode = function (node, x, y, w, h) {
@@ -4592,6 +4602,7 @@ class FilterPanel {
 
         var track = document.createElement('div');
         track.className = 'sl-dualrange';
+        track.setAttribute('aria-hidden', 'true');
 
         var fill = document.createElement('div');
         fill.className = 'sl-dualrange-fill';
@@ -4756,8 +4767,8 @@ class FilterPanel {
         var selected = active ? active.selected.slice() : values.slice();
 
         // Select all / none
-        var allBtn = document.createElement('div');
-        allBtn.style.cssText = 'font-size:11px;color:var(--sl-accent);cursor:pointer;margin-bottom:4px;';
+        var allBtn = document.createElement('button');
+        allBtn.style.cssText = 'font-size:11px;color:var(--sl-accent);cursor:pointer;margin-bottom:4px;background:none;border:none;padding:0;font-family:inherit;';
         allBtn.textContent = selected.length === values.length ? 'Select None' : 'Select All';
 
         // Build checkboxes first so allBtn can reference them
@@ -4838,6 +4849,14 @@ class FilterPanel {
   }
 }
 // ─── VizPanel — Add Visualization Tiles ────────────────────
+function _showToast(msg) {
+  var el = document.createElement('div');
+  el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--sl-panel-bg,#1a1a2e);border:1px solid #f43f5e;color:#f43f5e;padding:10px 18px;border-radius:8px;font-size:13px;font-family:var(--sl-font,sans-serif);z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.4);pointer-events:none;';
+  el.textContent = '\u26A0 ' + msg;
+  document.body.appendChild(el);
+  setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 4000);
+}
+
 class VizPanel {
   constructor(selector, dataStore, config) {
     this._ds = dataStore;
@@ -4894,6 +4913,11 @@ class VizPanel {
       label.textContent = ct.label;
       tile.appendChild(label);
 
+      var desc = document.createElement('div');
+      desc.className = 'sl-viz-desc';
+      desc.textContent = ct.desc;
+      tile.appendChild(desc);
+
       tile.addEventListener('click', function () {
         self._addChart(ct.type);
       });
@@ -4913,7 +4937,7 @@ class VizPanel {
     var catCols = strCols.filter(function (c) { return ds.getColumnValues(c.name).length <= 20; });
     if (catCols.length === 0) catCols = strCols;
 
-    if (cols.length === 0) { alert('No data loaded. Upload a CSV first.'); return; }
+    if (cols.length === 0) { _showToast('No data loaded. Upload a CSV first.'); return; }
 
     // Find or create target grid
     var target = this._targetGrid;
@@ -4921,7 +4945,7 @@ class VizPanel {
     if (!target) {
       target = document.querySelector('.app-grid') || document.querySelector('.grid');
     }
-    if (!target) { alert('No chart grid found.'); return; }
+    if (!target) { _showToast('No chart grid found.'); return; }
 
     // Create container div
     var div = document.createElement('div');
@@ -6002,7 +6026,20 @@ var SpottyFire = {
       ds.loadJSON(dataOrUrl);
       _build();
     } else if (typeof dataOrUrl === 'string') {
-      ds.loadCSV(dataOrUrl).then(_build);
+      container.innerHTML = '';
+      container.style.cssText = 'display:flex;align-items:center;justify-content:center;min-height:200px;';
+      var loadEl = document.createElement('div');
+      loadEl.style.cssText = 'color:var(--sl-text-secondary,#aaa);font-size:14px;font-family:var(--sl-font,sans-serif);';
+      loadEl.textContent = 'Loading\u2026';
+      container.appendChild(loadEl);
+      ds.loadCSV(dataOrUrl).then(_build).catch(function (err) {
+        container.innerHTML = '';
+        container.style.cssText = 'display:flex;align-items:center;justify-content:center;min-height:200px;';
+        var errEl = document.createElement('div');
+        errEl.style.cssText = 'color:#f43f5e;font-size:14px;font-family:var(--sl-font,sans-serif);';
+        errEl.textContent = '\u26A0 Failed to load: ' + (err && err.message ? err.message : String(err));
+        container.appendChild(errEl);
+      });
     }
 
     return ds;
@@ -6012,7 +6049,8 @@ var SpottyFire = {
   version: '1.0.0',
 };
 
-// Also expose as Spotlight for backward compatibility
-global.SpottyFire = SpottyFire;
-global.Spotlight = SpottyFire;
+// Expose globally — works in browsers (window) and Node.js (global)
+var _root = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : this;
+_root.SpottyFire = SpottyFire;
+_root.Spotlight = SpottyFire;
 })(typeof window !== 'undefined' ? window : this);

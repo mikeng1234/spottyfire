@@ -240,8 +240,8 @@ var FormulaEngine = (function () {
           case '<': return (+l) < (+r);
           case '>=': return (+l) >= (+r);
           case '<=': return (+l) <= (+r);
-          case '==': return l == r;
-          case '!=': return l != r;
+          case '==': return l === r;
+          case '!=': return l !== r;
         }
         break;
       }

@@ -92,7 +92,10 @@
       gallery.appendChild(card);
     });
 
-    // Render each theme
+    // Render each theme — setTheme is called immediately before each chart so the
+    // theme CSS variables are set synchronously before Plotly reads them.
+    // Do NOT reset theme after this loop — a post-loop setTheme() would race against
+    // any deferred Plotly reflows and paint all charts in the reset theme.
     themes.forEach(themeName => {
       SpottyFire.setTheme(themeName);
       const ds = new SpottyFire.DataStore();
@@ -106,9 +109,6 @@
         title: 'Avg Salary by Department'
       });
     });
-
-    // Reset to midnight
-    SpottyFire.setTheme('midnight');
   </script>
 </body>
 </html>

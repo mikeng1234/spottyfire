@@ -134,15 +134,16 @@ var TileEngine = (function () {
   Engine.prototype.layout = function () {
     if (!this._root) return;
     var rect = this._container.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      // Container not yet painted — defer until next frame
+      var self = this;
+      requestAnimationFrame(function () { self.layout(); });
+      return;
+    }
     this._layoutNode(this._root, 0, 0, rect.width, rect.height);
 
-    // Trigger Plotly resize on all charts
-    setTimeout(function () {
-      window.dispatchEvent(new Event('resize'));
-    }, 50);
-    setTimeout(function () {
-      window.dispatchEvent(new Event('resize'));
-    }, 200);
+    // Resize only registered Plotly chart divs — avoids cascading global resize
+    BaseChart.resizeAll();
   };
 
   Engine.prototype._layoutNode = function (node, x, y, w, h) {

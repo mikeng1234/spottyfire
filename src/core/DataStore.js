@@ -95,6 +95,10 @@ class DataStore {
   async loadCSV(urlOrString) {
     var self = this;
     return new Promise(function (resolve, reject) {
+      if (!urlOrString || typeof urlOrString !== 'string') {
+        reject(new Error('loadCSV: argument must be a non-empty string'));
+        return;
+      }
       var config = {
         header: true,
         dynamicTyping: true,
@@ -242,9 +246,17 @@ class DataStore {
   }
 
   _applyCalculatedColumns() {
-    var calc = this._calculatedCols;
-    var names = Object.keys(calc);
+    var names = Object.keys(this._calculatedFormulas);
     if (names.length === 0) return;
+    var self = this;
+    // Recompile window functions against current rows — baked-in snapshots go stale after reload
+    names.forEach(function (n) {
+      var formula = self._calculatedFormulas[n];
+      if (formula.toUpperCase().indexOf('OVER') >= 0) {
+        self._calculatedCols[n] = FormulaEngine.compileWindow(formula, self._rows);
+      }
+    });
+    var calc = this._calculatedCols;
     this._rows.forEach(function (r) {
       names.forEach(function (n) { r[n] = calc[n](r); });
     });

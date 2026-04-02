@@ -189,7 +189,20 @@ var SpottyFire = {
       ds.loadJSON(dataOrUrl);
       _build();
     } else if (typeof dataOrUrl === 'string') {
-      ds.loadCSV(dataOrUrl).then(_build);
+      container.innerHTML = '';
+      container.style.cssText = 'display:flex;align-items:center;justify-content:center;min-height:200px;';
+      var loadEl = document.createElement('div');
+      loadEl.style.cssText = 'color:var(--sl-text-secondary,#aaa);font-size:14px;font-family:var(--sl-font,sans-serif);';
+      loadEl.textContent = 'Loading\u2026';
+      container.appendChild(loadEl);
+      ds.loadCSV(dataOrUrl).then(_build).catch(function (err) {
+        container.innerHTML = '';
+        container.style.cssText = 'display:flex;align-items:center;justify-content:center;min-height:200px;';
+        var errEl = document.createElement('div');
+        errEl.style.cssText = 'color:#f43f5e;font-size:14px;font-family:var(--sl-font,sans-serif);';
+        errEl.textContent = '\u26A0 Failed to load: ' + (err && err.message ? err.message : String(err));
+        container.appendChild(errEl);
+      });
     }
 
     return ds;
@@ -199,6 +212,7 @@ var SpottyFire = {
   version: '1.0.0',
 };
 
-// Also expose as Spotlight for backward compatibility
-global.SpottyFire = SpottyFire;
-global.Spotlight = SpottyFire;
+// Expose globally — works in browsers (window) and Node.js (global)
+var _root = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : this;
+_root.SpottyFire = SpottyFire;
+_root.Spotlight = SpottyFire;

@@ -1,4 +1,12 @@
 // ─── VizPanel — Add Visualization Tiles ────────────────────
+function _showToast(msg) {
+  var el = document.createElement('div');
+  el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--sl-panel-bg,#1a1a2e);border:1px solid #f43f5e;color:#f43f5e;padding:10px 18px;border-radius:8px;font-size:13px;font-family:var(--sl-font,sans-serif);z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.4);pointer-events:none;';
+  el.textContent = '\u26A0 ' + msg;
+  document.body.appendChild(el);
+  setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 4000);
+}
+
 class VizPanel {
   constructor(selector, dataStore, config) {
     this._ds = dataStore;
@@ -55,6 +63,11 @@ class VizPanel {
       label.textContent = ct.label;
       tile.appendChild(label);
 
+      var desc = document.createElement('div');
+      desc.className = 'sl-viz-desc';
+      desc.textContent = ct.desc;
+      tile.appendChild(desc);
+
       tile.addEventListener('click', function () {
         self._addChart(ct.type);
       });
@@ -74,7 +87,7 @@ class VizPanel {
     var catCols = strCols.filter(function (c) { return ds.getColumnValues(c.name).length <= 20; });
     if (catCols.length === 0) catCols = strCols;
 
-    if (cols.length === 0) { alert('No data loaded. Upload a CSV first.'); return; }
+    if (cols.length === 0) { _showToast('No data loaded. Upload a CSV first.'); return; }
 
     // Find or create target grid
     var target = this._targetGrid;
@@ -82,7 +95,7 @@ class VizPanel {
     if (!target) {
       target = document.querySelector('.app-grid') || document.querySelector('.grid');
     }
-    if (!target) { alert('No chart grid found.'); return; }
+    if (!target) { _showToast('No chart grid found.'); return; }
 
     // Create container div
     var div = document.createElement('div');

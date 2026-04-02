@@ -382,6 +382,7 @@ const ThemeManager = (function () {
         '.sl-viz-icon{font-size:20px;margin-bottom:4px;opacity:0.7;}' +
         '.sl-viz-tile:hover .sl-viz-icon{opacity:1;}' +
         '.sl-viz-label{font-size:10px;font-weight:600;color:var(--sl-text-secondary);text-transform:uppercase;letter-spacing:0.5px;}' +
+        '.sl-viz-desc{font-size:9px;color:var(--sl-text-muted);margin-top:2px;text-align:center;line-height:1.3;}' +
         '.sl-dataset-panel{padding:4px 0;}' +
         '.sl-dataset-title{font-size:14px;font-weight:700;padding:8px 12px;color:var(--sl-text-primary);}' +
         '.sl-dataset-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;cursor:pointer;border-left:3px solid transparent;transition:all var(--sl-transition) ease;}' +

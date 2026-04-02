@@ -45,8 +45,10 @@ temp/
 # Other project files (not part of SpottyFire library)
 core/
 css/
+!src/core/
 lib/
 index.html
 students_data.csv
 SPOTFIRE_CAPABILITIES.md
 .claude/
+.standards-review/
